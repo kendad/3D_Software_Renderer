@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(
-  SoftwareRasterizer C
+  SoftwareRasterizer 
   VERSION 1.0.0
   DESCRIPTION "3D software rasterizer build in C"
   LANGUAGES C
@@ -16,6 +16,7 @@ endif()
 set(SOURCE_FILES
   src/main.c
   src/vector.c
+  src/matrix.c
 )
 
 add_compile_options(
