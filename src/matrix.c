@@ -28,7 +28,7 @@ mat4_t mat4_mul_mat4(mat4_t a, mat4_t b) {
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
       m.data[i][j] = a.data[i][0] * b.data[0][j] + a.data[i][1] * b.data[1][j] +
-                     b.data[i][2] * b.data[2][j] + b.data[i][3] * b.data[3][j];
+                     a.data[i][2] * b.data[2][j] + a.data[i][3] * b.data[3][j];
     };
   }
 
