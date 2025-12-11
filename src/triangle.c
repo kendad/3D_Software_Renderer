@@ -1,0 +1,101 @@
+#include "triangle.h"
+#include "display.h"
+#include "utilities.h"
+#include "vector.h"
+
+bool is_top_flat_or_left(vec2_t edge) {
+  bool is_top_flat = edge.y == 0 && edge.x > 0;
+  bool is_left = edge.y < 0;
+
+  return is_top_flat || is_left;
+}
+
+void fill_triangle(triangle_t triangle, app_state_t *app_state) {
+  // the three vertices of the triangle
+  vec2_t v0 = triangle.vertices[0];
+  vec2_t v1 = triangle.vertices[1];
+  vec2_t v2 = triangle.vertices[2];
+  // the color of each of this vertices
+  color_t c0 = triangle.colors[0];
+  color_t c1 = triangle.colors[1];
+  color_t c2 = triangle.colors[2];
+  // Bounding box inside containing the three vertices of the triangle
+  int x_min = min(v0.x, min(v1.x, v2.x));
+  int y_min = min(v0.y, min(v1.y, v2.y));
+  int x_max = max(v0.x, max(v1.x, v2.x));
+  int y_max = max(v0.y, max(v1.y, v2.y));
+
+  // constant Edge Function Deltas used for the horizontal and vertical steps
+  float delta_w0_col = (v0.y - v1.y);
+  float delta_w1_col = (v1.y - v2.y);
+  float delta_w2_col = (v2.y - v0.y);
+
+  float delta_w0_row = (v1.x - v0.x);
+  float delta_w1_row = (v2.x - v1.x);
+  float delta_w2_row = (v0.x - v2.x);
+
+  // the three triangle edges
+  vec2_t v0v1 = vec2_sub(v1, v0);
+  vec2_t v1v2 = vec2_sub(v2, v1);
+  vec2_t v2v0 = vec2_sub(v0, v2);
+
+  // area of the triangle
+  float area = fabsf(vec2_cross(v0v1, v2v0));
+
+  // For all the edges of the triangle
+  // find if they are flat_top or left
+  int bias0 = is_top_flat_or_left(v0v1) ? 0 : -1;
+  int bias1 = is_top_flat_or_left(v1v2) ? 0 : -1;
+  int bias2 = is_top_flat_or_left(v2v0) ? 0 : -1;
+
+  // take a starting point at the top left of the bounding box
+  vec2_t p0 = {x_min + 0.5, y_min + 0.5};
+  // the three vectors pointing from the three vertices to the point
+  vec2_t v0p = vec2_sub(p0, v0);
+  vec2_t v1p = vec2_sub(p0, v1);
+  vec2_t v2p = vec2_sub(p0, v2);
+
+  // Check if the point is left or right of the triangle edges(using Edge
+  // Function)
+  float w0_row = vec2_cross(v0v1, v0p) + bias0;
+  float w1_row = vec2_cross(v1v2, v1p) + bias1;
+  float w2_row = vec2_cross(v2v0, v2p) + bias2;
+
+  // Loop through all the pixels contained within this bounding box around the
+  // triangle
+  for (int y = y_min; y <= y_max; ++y) {
+    float w0 = w0_row;
+    float w1 = w1_row;
+    float w2 = w2_row;
+    for (int x = x_min; x <= x_max; ++x) {
+
+      // check if the point is inside the triangle
+      bool is_inside_triangle = w0 >= 0 && w1 >= 0 && w2 >= 0;
+
+      if (is_inside_triangle) {
+        float alpha = w0 / area;
+        float beta = w1 / area;
+        float gamma = w2 / area;
+
+        uint8_t a = 0xFF;
+        uint8_t r = alpha * c0.r + beta * c1.r + gamma * c2.r;
+        uint8_t g = alpha * c0.g + beta * c1.g + gamma * c2.g;
+        uint8_t b = alpha * c0.b + beta * c1.b + gamma * c2.b;
+
+        uint32_t interpolated_color = 0x00000000;
+        interpolated_color = (interpolated_color | a) << 8;
+        interpolated_color = (interpolated_color | b) << 8;
+        interpolated_color = (interpolated_color | g) << 8;
+        interpolated_color = interpolated_color | r;
+
+        display_draw_pixel(x, y, interpolated_color, app_state);
+      }
+      w0 += delta_w0_col;
+      w1 += delta_w1_col;
+      w2 += delta_w2_col;
+    }
+    w0_row += delta_w0_row;
+    w1_row += delta_w1_row;
+    w2_row += delta_w2_row;
+  }
+}

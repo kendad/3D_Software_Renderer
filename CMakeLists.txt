@@ -17,6 +17,9 @@ set(SOURCE_FILES
   src/main.c
   src/vector.c
   src/matrix.c
+  src/display.c
+  src/triangle.c
+  src/utilities.c
 )
 
 add_compile_options(
