@@ -5,6 +5,7 @@
 #include "mesh.h"
 #include "triangle.h"
 #include "vector.h"
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -15,12 +16,6 @@ void render(app_state_t *app_state);
 void cleanup(app_state_t *app_state);
 
 //////////////////////////////////////////////////////////////
-
-triangle_t sample_triangle = {
-    .vertices = {{(40.0 / 128) * WINDOW_WIDTH, (40.0 / 128) * WINDOW_HEIGHT},
-                 {(80.0 / 128) * WINDOW_WIDTH, (40.0 / 128) * WINDOW_HEIGHT},
-                 {(40.0 / 128) * WINDOW_WIDTH, (80.0 / 128) * WINDOW_HEIGHT}},
-    .colors = {{0xFF, 0X00, 0x00}, {0x00, 0XFF, 0x00}, {0x00, 0X00, 0xFF}}};
 triangle_t triangles_to_render[12];
 ///////////////////////////////////////////////////////////////
 
@@ -51,6 +46,10 @@ void setup(app_state_t *app_state) {
 void process_input(app_state_t *app_state) {}
 
 float rotation_Y = 0.0;
+const float fov_vertical = M_PI / 3.0;
+const float near = 0.1;
+const float far = 1000.0;
+const float aspect_ratio = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
 void update(app_state_t *app_state) {
   /////////////////////////////////////////////////////////////
 
@@ -72,19 +71,30 @@ void update(app_state_t *app_state) {
       triangle.vertices[j].z += 5.0; // move the mesh towards the forward z-axis
     }
 
-    // perspective divide
+    // perspective divide/projecion
+    // Create a perspective matrix
+    mat4_t perspective_matrix =
+        mat4_make_perspective(fov_vertical, aspect_ratio, near, far);
     for (int j = 0; j < 3; ++j) {
-      if (triangle.vertices[j].z != 0) {
-        triangle.vertices[j].x /= triangle.vertices[j].z;
-        triangle.vertices[j].y /= triangle.vertices[j].z;
-      }
+      vec4_t projected_points = vec4_from_vec3(triangle.vertices[j]);
+      projected_points = mat4_mul_vec4(
+          perspective_matrix,
+          projected_points); // Brings the values into the -1 and 1 range
+      // perspective divide
+      projected_points.x /= projected_points.w;
+      projected_points.y /= projected_points.w;
+      projected_points.z /= projected_points.w;
+      projected_points.w /= projected_points.w;
+
+      triangle.vertices[j] = vec3_from_vec4(projected_points);
     }
     // scale the coordinates from NDC[-1,1] to ScreenSpace[0,Width]and[0,Height]
     for (int j = 0; j < 3; ++j) {
       triangle.vertices[j].x *= (WINDOW_WIDTH / 2.0);
       triangle.vertices[j].y *= (WINDOW_HEIGHT / 2.0);
     }
-    // translate the points to [0 to WIDHT/HEIGHT] range
+    // translate the points to [0 to WIDHT/HEIGHT] range (SCREEN SPACE
+    // COORDINATES)
     for (int j = 0; j < 3; ++j) {
       triangle.vertices[j].x += (WINDOW_WIDTH / 2.0);
       triangle.vertices[j].y += (WINDOW_HEIGHT / 2.0);

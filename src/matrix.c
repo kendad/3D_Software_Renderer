@@ -22,6 +22,25 @@ mat4_t mat4_make_rotation_y(float angle) {
   return m;
 }
 
+mat4_t mat4_make_perspective(float fov, float aspect_ratio, float near,
+                             float far) {
+  mat4_t m = {.data = {{0}}};
+
+  float t = near * tan(fov / 2);
+  float r = t * aspect_ratio;
+
+  float A = (far + near) / (far - near);
+  float B = (-2 * far * near) / (far * near);
+
+  m.data[0][0] = near / r;
+  m.data[1][1] = near / t;
+  m.data[2][2] = A;
+  m.data[2][3] = B;
+  m.data[3][2] = 1.0;
+
+  return m;
+}
+
 vec4_t mat4_mul_vec4(mat4_t m, vec4_t v) {
   vec4_t result = {.x = m.data[0][0] * v.x + m.data[0][1] * v.y +
                         m.data[0][2] * v.z + m.data[0][3] * v.w,
