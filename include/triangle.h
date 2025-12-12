@@ -1,11 +1,40 @@
 #pragma once
 #include "appstate.h"
+#include "texture.h"
 #include "utilities.h"
 #include "vector.h"
+#include <stdint.h>
+
+//                  'a'
+//               vertices[0]
+//               texcoords[0]
+//                   a_uv
+//                   /\
+//                  /  \
+//                 /    \
+//                /______\
+//              'b'      'c'
+//        vertices[1]    vertices[2]
+//        texcoords[1]   texcoords[2]
+//            b_uv           c_uv
 
 typedef struct {
-  vec2_t vertices[3];
+  vec3_t vertices[3];
+  tex2_t texcoords[3];
+
   color_t colors[3];
 } triangle_t;
+
+typedef struct {
+  int a;
+  int b;
+  int c;
+
+  tex2_t a_uv;
+  tex2_t b_uv;
+  tex2_t c_uv;
+
+  uint32_t color;
+} face_t;
 
 void fill_triangle(triangle_t triangle, app_state_t *app_state);

@@ -20,10 +20,12 @@ set(SOURCE_FILES
   src/display.c
   src/triangle.c
   src/utilities.c
+  src/mesh.c
 )
 
 add_compile_options(
   -Wall
+  -Wno-comment
 )
 
 find_package(SDL2 REQUIRED)

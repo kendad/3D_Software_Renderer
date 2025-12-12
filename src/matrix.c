@@ -1,10 +1,25 @@
 #include "matrix.h"
 #include "vector.h"
+#include <math.h>
 
-mat4_t mat4_make_identity() {
+mat4_t mat4_make_identity(void) {
   mat4_t matrix = {
       .data = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
   return matrix;
+}
+
+mat4_t mat4_make_rotation_y(float angle) {
+  mat4_t m = mat4_make_identity();
+
+  float cos_angle = cos(angle);
+  float sin_angle = sin(angle);
+
+  m.data[0][0] = cos_angle;
+  m.data[0][2] = sin_angle;
+  m.data[2][0] = -sin_angle;
+  m.data[2][2] = cos_angle;
+
+  return m;
 }
 
 vec4_t mat4_mul_vec4(mat4_t m, vec4_t v) {

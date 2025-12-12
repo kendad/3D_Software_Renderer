@@ -1,8 +1,12 @@
 #include "appstate.h"
 #include "config.h"
 #include "display.h"
+#include "matrix.h"
+#include "mesh.h"
 #include "triangle.h"
+#include "vector.h"
 #include <stdint.h>
+#include <stdio.h>
 
 void setup(app_state_t *app_state);
 void process_input(app_state_t *app_state);
@@ -17,7 +21,7 @@ triangle_t sample_triangle = {
                  {(80.0 / 128) * WINDOW_WIDTH, (40.0 / 128) * WINDOW_HEIGHT},
                  {(40.0 / 128) * WINDOW_WIDTH, (80.0 / 128) * WINDOW_HEIGHT}},
     .colors = {{0xFF, 0X00, 0x00}, {0x00, 0XFF, 0x00}, {0x00, 0X00, 0xFF}}};
-
+triangle_t triangles_to_render[12];
 ///////////////////////////////////////////////////////////////
 
 int main(void) {
@@ -36,21 +40,75 @@ int main(void) {
   return 0;
 }
 
-void setup(app_state_t *app_state) { display_init(app_state); }
+void setup(app_state_t *app_state) {
+
+  //////////////////////////////////////////////////////////////////
+  load_cube_mesh_data();
+  //////////////////////////////////////////////////////////////////
+  display_init(app_state);
+}
 
 void process_input(app_state_t *app_state) {}
 
-void update(app_state_t *app_state) {}
+float rotation_Y = 0.0;
+void update(app_state_t *app_state) {
+  /////////////////////////////////////////////////////////////
+
+  // Create a Rotation Matrix for rotation around Y-Axis
+  rotation_Y += 0.001;
+  mat4_t rotation_matrix_Y = mat4_make_rotation_y(rotation_Y);
+
+  // Applying Simple projection here
+  for (int i = 0; i < 12; ++i) {
+    triangle_t triangle = cube_mesh_triangle_faces[i];
+    // Transformations
+    for (int j = 0; j < 3; ++j) {
+      // Rotations
+      vec4_t transformed_points = vec4_from_vec3(triangle.vertices[j]);
+      transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
+      triangle.vertices[j] = vec3_from_vec4(transformed_points);
+
+      // Translation
+      triangle.vertices[j].z += 5.0; // move the mesh towards the forward z-axis
+    }
+
+    // perspective divide
+    for (int j = 0; j < 3; ++j) {
+      if (triangle.vertices[j].z != 0) {
+        triangle.vertices[j].x /= triangle.vertices[j].z;
+        triangle.vertices[j].y /= triangle.vertices[j].z;
+      }
+    }
+    // scale the coordinates from NDC[-1,1] to ScreenSpace[0,Width]and[0,Height]
+    for (int j = 0; j < 3; ++j) {
+      triangle.vertices[j].x *= (WINDOW_WIDTH / 2.0);
+      triangle.vertices[j].y *= (WINDOW_HEIGHT / 2.0);
+    }
+    // translate the points to [0 to WIDHT/HEIGHT] range
+    for (int j = 0; j < 3; ++j) {
+      triangle.vertices[j].x += (WINDOW_WIDTH / 2.0);
+      triangle.vertices[j].y += (WINDOW_HEIGHT / 2.0);
+    }
+    triangles_to_render[i] = triangle;
+  }
+  /////////////////////////////////////////////////////////////
+}
 
 void render(app_state_t *app_state) {
   display_clear_buffer(app_state, 0xFF000000);
 
   ////////////////////////////////////////////////////////////
-  fill_triangle(sample_triangle, app_state);
+  for (int i = 0; i < 12; ++i) {
+    fill_triangle(triangles_to_render[i], app_state);
+  }
+  // fill_triangle(sample_triangle, app_state);
   /////////////////////////////////////////
   //////////////////////
 
   display_render_buffer(app_state);
 }
 
-void cleanup(app_state_t *app_state) { display_cleanup(app_state); }
+void cleanup(app_state_t *app_state) {
+  free_mesh_data(mesh);
+  display_cleanup(app_state);
+}

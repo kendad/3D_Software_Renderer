@@ -12,9 +12,9 @@ bool is_top_flat_or_left(vec2_t edge) {
 
 void fill_triangle(triangle_t triangle, app_state_t *app_state) {
   // the three vertices of the triangle
-  vec2_t v0 = triangle.vertices[0];
-  vec2_t v1 = triangle.vertices[1];
-  vec2_t v2 = triangle.vertices[2];
+  vec2_t v0 = vec2_from_vec3(triangle.vertices[0]);
+  vec2_t v1 = vec2_from_vec3(triangle.vertices[1]);
+  vec2_t v2 = vec2_from_vec3(triangle.vertices[2]);
   // the color of each of this vertices
   color_t c0 = triangle.colors[0];
   color_t c1 = triangle.colors[1];
@@ -44,9 +44,9 @@ void fill_triangle(triangle_t triangle, app_state_t *app_state) {
 
   // For all the edges of the triangle
   // find if they are flat_top or left
-  int bias0 = is_top_flat_or_left(v0v1) ? 0 : -1;
-  int bias1 = is_top_flat_or_left(v1v2) ? 0 : -1;
-  int bias2 = is_top_flat_or_left(v2v0) ? 0 : -1;
+  float bias0 = is_top_flat_or_left(v0v1) ? 0 : -0.0001;
+  float bias1 = is_top_flat_or_left(v1v2) ? 0 : -0.0001;
+  float bias2 = is_top_flat_or_left(v2v0) ? 0 : -0.0001;
 
   // take a starting point at the top left of the bounding box
   vec2_t p0 = {x_min + 0.5, y_min + 0.5};
