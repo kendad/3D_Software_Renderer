@@ -46,6 +46,7 @@ void setup(app_state_t *app_state) {
 void process_input(app_state_t *app_state) {}
 
 float rotation_Y = 0.0;
+float scale_Y = 1.0;
 const float fov_vertical = M_PI / 3.0;
 const float near = 0.1;
 const float far = 1000.0;
@@ -55,19 +56,34 @@ void update(app_state_t *app_state) {
 
   // Create a Rotation Matrix for rotation around Y-Axis
   rotation_Y += 0.001;
+  mat4_t rotation_matrix_X = mat4_make_rotation_x(rotation_Y);
   mat4_t rotation_matrix_Y = mat4_make_rotation_y(rotation_Y);
+  mat4_t rotation_matrix_Z = mat4_make_rotation_z(rotation_Y);
+
+  // scale_Y += 0.001;
+  mat4_t scale_matrix = mat4_make_scale(1.0, scale_Y, 1.0);
+
+  mat4_t translation_matrix = mat4_make_translation(0, 0, 0);
 
   // Applying Simple projection here
   for (int i = 0; i < 12; ++i) {
     triangle_t triangle = cube_mesh_triangle_faces[i];
     // Transformations
     for (int j = 0; j < 3; ++j) {
-      // Rotations
       vec4_t transformed_points = vec4_from_vec3(triangle.vertices[j]);
+      // Scale
+      transformed_points = mat4_mul_vec4(scale_matrix, transformed_points);
+
+      // Rotations
+      transformed_points = mat4_mul_vec4(rotation_matrix_X, transformed_points);
       transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
-      triangle.vertices[j] = vec3_from_vec4(transformed_points);
+      transformed_points = mat4_mul_vec4(rotation_matrix_Z, transformed_points);
 
       // Translation
+      transformed_points =
+          mat4_mul_vec4(translation_matrix, transformed_points);
+
+      triangle.vertices[j] = vec3_from_vec4(transformed_points);
       triangle.vertices[j].z += 5.0; // move the mesh towards the forward z-axis
     }
 

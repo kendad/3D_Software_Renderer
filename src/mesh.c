@@ -138,3 +138,5 @@ void free_mesh_data(mesh_t mesh) {
   free(mesh.vertices);
   free(mesh.faces);
 }
+
+void load_mesh(char *filename) {}

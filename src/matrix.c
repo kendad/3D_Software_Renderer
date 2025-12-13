@@ -8,6 +8,37 @@ mat4_t mat4_make_identity(void) {
   return matrix;
 }
 
+/*
+ *
+ *               TRANSFORMATIONS
+ *
+ * */
+
+/////////////////////// SCALE ///////////////////////////////
+mat4_t mat4_make_scale(float sx, float sy, float sz) {
+  mat4_t m = mat4_make_identity();
+  m.data[0][0] = sx;
+  m.data[1][1] = sy;
+  m.data[2][2] = sz;
+
+  return m;
+}
+///////////////////////////////////////////////////////////////
+
+////////////////// ROTATIONS /////////////////////////////////
+mat4_t mat4_make_rotation_x(float angle) {
+  mat4_t m = mat4_make_identity();
+
+  float cos_angle = cos(angle);
+  float sin_angle = sin(angle);
+
+  m.data[1][1] = cos_angle;
+  m.data[1][2] = -sin_angle;
+  m.data[2][1] = sin_angle;
+  m.data[2][2] = cos_angle;
+
+  return m;
+}
 mat4_t mat4_make_rotation_y(float angle) {
   mat4_t m = mat4_make_identity();
 
@@ -19,6 +50,30 @@ mat4_t mat4_make_rotation_y(float angle) {
   m.data[2][0] = -sin_angle;
   m.data[2][2] = cos_angle;
 
+  return m;
+}
+mat4_t mat4_make_rotation_z(float angle) {
+  mat4_t m = mat4_make_identity();
+
+  float cos_angle = cos(angle);
+  float sin_angle = sin(angle);
+
+  m.data[0][0] = cos_angle;
+  m.data[0][1] = -sin_angle;
+  m.data[1][0] = sin_angle;
+  m.data[1][1] = cos_angle;
+
+  return m;
+}
+
+/////////////////////////////////////////////////////////////////
+
+/////////////////////  TRANSLATIONS /////////////////////////////
+mat4_t mat4_make_translation(float tx, float ty, float tz) {
+  mat4_t m = mat4_make_identity();
+  m.data[0][3] = tx;
+  m.data[1][3] = ty;
+  m.data[2][3] = tz;
   return m;
 }
 
