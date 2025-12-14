@@ -38,7 +38,8 @@ int main(void) {
 void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
-  load_cube_mesh_data();
+  // load_cube_mesh_data();
+  load_mesh_obj("../assets/cube.obj");
   //////////////////////////////////////////////////////////////////
   display_init(app_state);
 }
