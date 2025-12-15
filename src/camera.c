@@ -1,6 +1,8 @@
 #include "camera.h"
 
 camera_t create_base_camera(void) {
-  camera_t camera = {.position = {0, 0, -5.0}, .direction = {0, 0, 1}};
+  camera_t camera = {.position = {0, 0, -5.0},
+                     .direction = {0, 0, 1},
+                     .delta_x_mouse_movement = 0};
   return camera;
 }
