@@ -1,6 +1,7 @@
 #include "matrix.h"
 #include "vector.h"
 #include <math.h>
+#include <stdio.h>
 
 mat4_t mat4_make_identity(void) {
   mat4_t matrix = {

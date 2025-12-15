@@ -61,8 +61,7 @@ color_t color_white = {0xFF, 0xFF, 0xFF};
 float rotation_Y = 0.0;
 float scale_Y = 1.0;
 // CAMERA INITIALIZER
-// target direction and UP vector for the camera
-vec3_t camera_target = {0, 0, 1};
+// UP vector for the camera
 vec3_t camera_up_vector = {0, 1, 0};
 // PROJECTION INITIALIZER
 const float fov_vertical = M_PI / 3.0;
@@ -92,6 +91,7 @@ void update(app_state_t *app_state) {
       mat4_make_perspective(fov_vertical, aspect_ratio, near, far);
 
   // Create a View Matrix
+  vec3_t camera_target = vec3_add(camera.position, camera.direction);
   mat4_t view_matrix =
       mat4_make_look_at(camera.position, camera_target, camera_up_vector);
 
@@ -113,11 +113,10 @@ void update(app_state_t *app_state) {
       transformed_points = mat4_mul_vec4(scale_matrix, transformed_points);
 
       // Rotations
-      // transformed_points = mat4_mul_vec4(rotation_matrix_X,
-      // transformed_points);
-      transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
-      // transformed_points = mat4_mul_vec4(rotation_matrix_Z,
-      // transformed_points);
+      transformed_points = mat4_mul_vec4(rotation_matrix_X, transformed_points);
+      // transformed_points = mat4_mul_vec4(rotation_matrix_Y,
+      // transformed_points); transformed_points =
+      // mat4_mul_vec4(rotation_matrix_Z, transformed_points);
 
       // Translation
       transformed_points =
@@ -167,14 +166,13 @@ void update(app_state_t *app_state) {
     }
 
     for (int j = 0; j < 3; ++j) {
-      // scale the coordinates from NDC[-1,1] to
-      // ScreenSpace[0,Width]and[0,Height]
-      triangle.vertices[j].x *= (WINDOW_WIDTH / 2.0);
-      triangle.vertices[j].y *= (WINDOW_HEIGHT / 2.0);
-      // translate the points to [0 to WIDHT/HEIGHT] range (SCREEN SPACE
-      // COORDINATES)
-      triangle.vertices[j].x += (WINDOW_WIDTH / 2.0);
-      triangle.vertices[j].y += (WINDOW_HEIGHT / 2.0);
+      // scale NDC[-1 to 1] to SCREEN_SPACE[0,1]
+      triangle.vertices[j].x = (triangle.vertices[j].x + 1.0) * 0.5;
+      triangle.vertices[j].y = (triangle.vertices[j].y + 1.0) * 0.5;
+
+      // Scale the SCREEN_SPACE from[0,1] to [0,Width/Height]
+      triangle.vertices[j].x *= WINDOW_WIDTH;
+      triangle.vertices[j].y *= WINDOW_HEIGHT;
     }
 
     triangles_to_render[triangles_to_render_count++] = triangle;
