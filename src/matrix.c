@@ -67,7 +67,6 @@ mat4_t mat4_make_rotation_z(float angle) {
 }
 
 /////////////////////////////////////////////////////////////////
-
 /////////////////////  TRANSLATIONS /////////////////////////////
 mat4_t mat4_make_translation(float tx, float ty, float tz) {
   mat4_t m = mat4_make_identity();
@@ -77,6 +76,29 @@ mat4_t mat4_make_translation(float tx, float ty, float tz) {
   return m;
 }
 
+/////////////////////////////////////////////////////////////////
+/////////////////////  VIEW MATRIX //////////////////////////////
+mat4_t mat4_make_look_at(vec3_t eye, vec3_t target, vec3_t up) {
+  vec3_t z_basis = vec3_sub(target, eye);
+  vec3_t x_basis = vec3_cross(up, z_basis);
+  vec3_t y_basis = vec3_cross(z_basis, x_basis);
+
+  vec3_normalize(&x_basis);
+  vec3_normalize(&y_basis);
+  vec3_normalize(&z_basis);
+
+  mat4_t view_matrix = {
+      .data = {{x_basis.x, x_basis.y, x_basis.z, -vec3_dot(x_basis, eye)},
+               {y_basis.x, y_basis.y, y_basis.z, -vec3_dot(y_basis, eye)},
+               {z_basis.x, z_basis.y, z_basis.z, -vec3_dot(z_basis, eye)},
+               {0, 0, 0, 1}}};
+
+  return view_matrix;
+}
+
+//////////////////////////////////////////////////////////////////////
+////////////////////////// PROJECTIONS //////////////////////////////
+/////////////////////////////////////////////////////////////////////
 mat4_t mat4_make_perspective(float fov, float aspect_ratio, float near,
                              float far) {
   mat4_t m = {.data = {{0}}};
@@ -95,6 +117,10 @@ mat4_t mat4_make_perspective(float fov, float aspect_ratio, float near,
 
   return m;
 }
+
+//////////////////////////////////////////////////////////////////////
+///////////////////// MATRIX MATHS //////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
 vec4_t mat4_mul_vec4(mat4_t m, vec4_t v) {
   vec4_t result = {.x = m.data[0][0] * v.x + m.data[0][1] * v.y +

@@ -37,4 +37,5 @@ typedef struct {
   uint32_t color;
 } face_t;
 
-void fill_triangle(triangle_t triangle, app_state_t *app_state);
+void draw_triangle_fill(triangle_t triangle, app_state_t *app_state);
+void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);

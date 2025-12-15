@@ -21,6 +21,7 @@ set(SOURCE_FILES
   src/triangle.c
   src/utilities.c
   src/mesh.c
+  src/camera.c
 )
 
 add_compile_options(

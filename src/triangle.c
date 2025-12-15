@@ -1,7 +1,47 @@
 #include "triangle.h"
+#include "appstate.h"
 #include "display.h"
 #include "utilities.h"
 #include "vector.h"
+#include <math.h>
+
+// Digital Differential Analyzer(DDA) line drawing algorithm
+void draw_line(float x0, float y0, float x1, float y1, app_state_t *app_state) {
+  float delta_x = x1 - x0;
+  float delta_y = y1 - y0;
+
+  float longest_side =
+      (fabsf(delta_x) > fabsf(delta_y)) ? fabsf(delta_x) : fabsf(delta_y);
+
+  if (longest_side == 0)
+    return;
+
+  float x_increment = delta_x / longest_side;
+  float y_increment = delta_y / longest_side;
+
+  float current_x = x0;
+  float current_y = y0;
+  for (int i = 0; i < longest_side; ++i) {
+    display_draw_pixel(current_x, current_y, 0xFFFFFFFF, app_state);
+    current_x += x_increment;
+    current_y += y_increment;
+  }
+}
+
+void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state) {
+  float x0 = triangle.vertices[0].x;
+  float y0 = triangle.vertices[0].y;
+
+  float x1 = triangle.vertices[1].x;
+  float y1 = triangle.vertices[1].y;
+
+  float x2 = triangle.vertices[2].x;
+  float y2 = triangle.vertices[2].y;
+
+  draw_line(x0, y0, x1, y1, app_state);
+  draw_line(x1, y1, x2, y2, app_state);
+  draw_line(x2, y2, x0, y0, app_state);
+}
 
 bool is_top_flat_or_left(vec2_t edge) {
   bool is_top_flat = edge.y == 0 && edge.x > 0;
@@ -10,7 +50,7 @@ bool is_top_flat_or_left(vec2_t edge) {
   return is_top_flat || is_left;
 }
 
-void fill_triangle(triangle_t triangle, app_state_t *app_state) {
+void draw_triangle_fill(triangle_t triangle, app_state_t *app_state) {
   // the three vertices of the triangle
   vec2_t v0 = vec2_from_vec3(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec3(triangle.vertices[1]);
