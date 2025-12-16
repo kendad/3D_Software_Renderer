@@ -57,10 +57,25 @@ int main(void) {
 
   return 0;
 }
-
+/////////////////////////  INITIALIZERS
+////////////////////////////////////////////////
 mesh_t mesh;
 int triangles_to_render_count = 0;
 camera_t camera;
+// TRANSFORMATION INITIALIZER
+color_t color_white = {0xFF, 0xFF, 0xFF};
+float rotation_Y = 0.0;
+float scale_Y = 1.0;
+// CAMERA INITIALIZER
+// UP vector for the camera
+vec3_t camera_up_vector = {0, 1, 0};
+// PROJECTION INITIALIZER
+const float fov_vertical = M_PI / 3.0;
+const float near = 0.1;
+const float far = 1000.0;
+const float aspect_ratio = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
+//////////////////////////////////////////////////////////////////////////////////////
+
 void setup(app_state_t *app_state) {
   // Set up the Frame Timer and the delta timer
   app_state->previous_frame_time = 0.0;
@@ -68,7 +83,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/sphere.obj");
+  mesh = load_mesh_obj("../assets/cube.obj");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the base camera
@@ -83,52 +98,67 @@ void setup(app_state_t *app_state) {
 
 void process_input(app_state_t *app_state) {
   SDL_Event event;
-  SDL_PollEvent(&event);
 
-  // update mouse position deltas
-  SDL_GetRelativeMouseState(&camera.delta_x_mouse_movement,
-                            &camera.delta_y_mouse_movement);
+  // Vectors for camera movements
+  vec3_t forward_vector = camera.direction;
+  vec3_t right_vector = vec3_cross(camera.direction, camera_up_vector);
+  vec3_normalize(&right_vector);
 
-  switch (event.type) {
-  case SDL_QUIT:
-    app_state->is_running = false;
-    break;
-  case SDL_KEYDOWN:
-    if (event.key.keysym.sym == SDLK_ESCAPE) {
+  while (SDL_PollEvent(&event)) {
+    switch (event.type) {
+    case SDL_QUIT:
       app_state->is_running = false;
+      break;
+    case SDL_KEYDOWN:
+      if (event.key.keysym.sym == SDLK_ESCAPE) {
+        app_state->is_running = false;
+      }
+      // W-A-S-D movements
+      if (event.key.keysym.sym == SDLK_w) {
+        vec3_mul(&forward_vector, camera.speed * app_state->delta_time);
+        camera.position = vec3_add(camera.position, forward_vector);
+      }
+      if (event.key.keysym.sym == SDLK_s) {
+        vec3_mul(&forward_vector, camera.speed * app_state->delta_time);
+        camera.position = vec3_sub(camera.position, forward_vector);
+      }
+      if (event.key.keysym.sym == SDLK_a) {
+        vec3_mul(&right_vector, camera.speed * app_state->delta_time);
+        camera.position = vec3_add(camera.position, right_vector);
+      }
+      if (event.key.keysym.sym == SDLK_d) {
+        vec3_mul(&right_vector, camera.speed * app_state->delta_time);
+        camera.position = vec3_sub(camera.position, right_vector);
+        break;
+      }
+      // ROTATION controls
+      // YAW
+      if (event.key.keysym.sym == SDLK_RIGHT) {
+        camera.yaw += camera.mouse_sensitivity * app_state->delta_time;
+        break;
+      }
+      if (event.key.keysym.sym == SDLK_LEFT) {
+        camera.yaw -= camera.mouse_sensitivity * app_state->delta_time;
+        break;
+      }
+      // PITCH
+      if (event.key.keysym.sym == SDLK_UP) {
+        camera.pitch -= camera.mouse_sensitivity * app_state->delta_time;
+        if (camera.pitch <= -(M_PI / 2)) {
+          camera.pitch = -(M_PI / 2);
+        }
+        break;
+      }
+      if (event.key.keysym.sym == SDLK_DOWN) {
+        camera.pitch += camera.mouse_sensitivity * app_state->delta_time;
+        if (camera.pitch >= (M_PI / 2)) {
+          camera.pitch = (M_PI / 2);
+        }
+        break;
+      }
     }
-    if (event.key.keysym.sym == SDLK_w) {
-      vec3_t forward_velocity = camera.direction;
-      vec3_mul(&forward_velocity, 2.0 * app_state->delta_time);
-      camera.position = vec3_add(camera.position, forward_velocity);
-    }
-    if (event.key.keysym.sym == SDLK_s) {
-      vec3_t forward_velocity = camera.direction;
-      vec3_mul(&forward_velocity, 2.0 * app_state->delta_time);
-      camera.position = vec3_sub(camera.position, forward_velocity);
-    }
-    if (event.key.keysym.sym == SDLK_a) {
-      camera.position.x -= 2.0 * app_state->delta_time;
-    }
-    if (event.key.keysym.sym == SDLK_d) {
-      camera.position.x += 2.0 * app_state->delta_time;
-    }
-    break;
   }
 }
-
-// TRANSFORMATION INITIALIZER
-color_t color_white = {0xFF, 0xFF, 0xFF};
-float rotation_Y = 0.0;
-float scale_Y = 1.0;
-// CAMERA INITIALIZER
-// UP vector for the camera
-vec3_t camera_up_vector = {0, 1, 0};
-// PROJECTION INITIALIZER
-const float fov_vertical = M_PI / 3.0;
-const float near = 0.1;
-const float far = 1000.0;
-const float aspect_ratio = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
 
 void update(app_state_t *app_state) {
   /////////////////////////////////////////////////////////////
@@ -151,20 +181,21 @@ void update(app_state_t *app_state) {
   mat4_t perspective_matrix =
       mat4_make_perspective(fov_vertical, aspect_ratio, near, far);
 
-  // Create a View Matrix
-  vec4_t base_camera_direction = {0, 0, 1, 0};
-  mat4_t camera_yaw_rotation = mat4_make_rotation_y(
-      (float)camera.delta_x_mouse_movement * app_state->delta_time * 0.1);
-  // apply yaw rotation to base camera direction to get the new direction
-  vec4_t rotated_direction =
-      mat4_mul_vec4(camera_yaw_rotation, base_camera_direction);
-  camera.direction = vec3_from_vec4(rotated_direction);
-  vec3_t camera_target = vec3_add(camera.position, camera.direction);
+  // Create a View Matrix based of on FPS CAMERA
+  vec3_t camera_target = {0, 0, 1};
+  mat4_t camera_yaw_matrix = mat4_make_rotation_y(camera.yaw);
+  mat4_t camera_pitch_matrix = mat4_make_rotation_x(camera.pitch);
+  mat4_t camera_rotation_matrix =
+      mat4_mul_mat4(camera_yaw_matrix, camera_pitch_matrix);
+  camera.direction = vec3_from_vec4(
+      mat4_mul_vec4(camera_rotation_matrix, vec4_from_vec3(camera_target)));
+  vec3_normalize(&camera.direction);
+  camera_target = vec3_add(camera.position, camera.direction);
 
   mat4_t view_matrix =
       mat4_make_look_at(camera.position, camera_target, camera_up_vector);
 
-  // Applying Simple projection here
+  // loop through all the faces/triangles
   for (int i = 0; i < mesh.number_of_faces; ++i) {
     triangle_t triangle;
     // One face is one triangle
