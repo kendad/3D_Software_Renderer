@@ -48,11 +48,26 @@ void display_init(app_state_t *app_state) {
   // Allocate memory space for the color buffer
   app_state->color_buffer =
       (uint32_t *)calloc(WINDOW_WIDTH * WINDOW_HEIGHT, sizeof(uint32_t));
+
+  // allocate memory for the depth buffer
+  app_state->z_buffer =
+      (float *)malloc(WINDOW_WIDTH * WINDOW_HEIGHT * sizeof(float));
 }
 
 void display_clear_buffer(app_state_t *app_state, uint32_t color) {
   for (int i = 0; i < WINDOW_WIDTH * WINDOW_HEIGHT; ++i) {
     app_state->color_buffer[i] = color;
+  }
+}
+
+void display_clear_depth_buffer(app_state_t *app_state) {
+  // the depth buffer will have values from 0 and 1
+  // we will keep all its values at 0(usually should be 1 but since we will be
+  // comparing the interpolation of the reciprocal of depth we have to invert
+  // the logic) so that any time we check the buffer initially all the depth
+  // will be at the far plane
+  for (int i = 0; i < WINDOW_WIDTH * WINDOW_HEIGHT; ++i) {
+    app_state->z_buffer[i] = 0.0;
   }
 }
 
@@ -73,6 +88,7 @@ void display_render_buffer(app_state_t *app_state) {
 void display_cleanup(app_state_t *app_state) {
   // Free Up allocated memory space
   free(app_state->color_buffer);
+  free(app_state->z_buffer);
   SDL_DestroyTexture(app_state->color_buffer_texture);
   SDL_DestroyRenderer(app_state->renderer);
   SDL_DestroyWindow(app_state->window);

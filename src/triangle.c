@@ -1,5 +1,6 @@
 #include "triangle.h"
 #include "appstate.h"
+#include "config.h"
 #include "display.h"
 #include "mesh.h"
 #include "texture.h"
@@ -159,7 +160,10 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
         interpolated_color =
             texture_data->data[tex_x + (texture_data->width * tex_y)];
 
-        display_draw_pixel(x, y, interpolated_color, app_state);
+        if (interpolated_z > app_state->z_buffer[x + (WINDOW_WIDTH * y)]) {
+          display_draw_pixel(x, y, interpolated_color, app_state);
+          app_state->z_buffer[x + (WINDOW_WIDTH * y)] = interpolated_z;
+        }
       }
       w0 += delta_w0_col;
       w1 += delta_w1_col;

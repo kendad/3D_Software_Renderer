@@ -8,6 +8,7 @@ typedef struct {
   SDL_Renderer *renderer;
 
   uint32_t *color_buffer;
+  float *z_buffer;
   SDL_Texture *color_buffer_texture;
 
   bool is_running;

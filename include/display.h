@@ -5,6 +5,7 @@
 
 void display_init(app_state_t *app_state);
 void display_clear_buffer(app_state_t *app_state, uint32_t color);
+void display_clear_depth_buffer(app_state_t *app_state);
 void display_render_buffer(app_state_t *app_state);
 void display_cleanup(app_state_t *app_state);
 
