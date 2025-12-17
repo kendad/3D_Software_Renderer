@@ -1,10 +1,14 @@
 #pragma once
+#include "texture.h"
 #include "triangle.h"
 #include "vector.h"
+#include <stdint.h>
 
 typedef struct {
   vec3_t *vertices;
+  tex2_t *tex_coords;
   face_t *faces;
+  texture_t texture_data;
   int number_of_faces;
 } mesh_t;
 
@@ -25,4 +29,4 @@ void free_mesh_data(mesh_t mesh);
 ///////////////////////////////////////////////////////
 //////////////////////////////////////////////////////
 
-mesh_t load_mesh_obj(char *filename);
+mesh_t load_mesh_obj(char *obj_filename, char *texture_filename);

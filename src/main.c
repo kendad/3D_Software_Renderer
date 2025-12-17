@@ -58,7 +58,7 @@ int main(void) {
   return 0;
 }
 /////////////////////////  INITIALIZERS
-////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 mesh_t mesh;
 int triangles_to_render_count = 0;
 camera_t camera;
@@ -83,7 +83,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/cube.obj");
+  mesh = load_mesh_obj("../assets/cube.obj", "../assets/cube.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the base camera
@@ -199,42 +199,45 @@ void update(app_state_t *app_state) {
   for (int i = 0; i < mesh.number_of_faces; ++i) {
     triangle_t triangle;
     // One face is one triangle
-    triangle.vertices[0] = mesh.vertices[mesh.faces[i].a];
-    triangle.vertices[1] = mesh.vertices[mesh.faces[i].b];
-    triangle.vertices[2] = mesh.vertices[mesh.faces[i].c];
+    triangle.vertices[0] = vec4_from_vec3(mesh.vertices[mesh.faces[i].a]);
+    triangle.vertices[1] = vec4_from_vec3(mesh.vertices[mesh.faces[i].b]);
+    triangle.vertices[2] = vec4_from_vec3(mesh.vertices[mesh.faces[i].c]);
+    triangle.texcoords[0] = mesh.tex_coords[mesh.faces[i].a_uv];
+    triangle.texcoords[1] = mesh.tex_coords[mesh.faces[i].b_uv];
+    triangle.texcoords[2] = mesh.tex_coords[mesh.faces[i].c_uv];
     triangle.colors[0] = color_white;
     triangle.colors[1] = color_white;
     triangle.colors[2] = color_white;
 
     // Transformations
     for (int j = 0; j < 3; ++j) {
-      vec4_t transformed_points = vec4_from_vec3(triangle.vertices[j]);
+      vec4_t transformed_points = triangle.vertices[j];
       // Scale
       transformed_points = mat4_mul_vec4(scale_matrix, transformed_points);
 
       // Rotations
-      transformed_points = mat4_mul_vec4(rotation_matrix_X, transformed_points);
-      // transformed_points = mat4_mul_vec4(rotation_matrix_Y,
-      // transformed_points); transformed_points =
-      // mat4_mul_vec4(rotation_matrix_Z, transformed_points);
+      // transformed_points = mat4_mul_vec4(rotation_matrix_X,
+      // transformed_points);
+      transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
+      // transformed_points = mat4_mul_vec4(rotation_matrix_Z,
+      // transformed_points);
 
       // Translation
       transformed_points =
           mat4_mul_vec4(translation_matrix, transformed_points);
 
-      triangle.vertices[j] = vec3_from_vec4(transformed_points);
+      triangle.vertices[j] = transformed_points;
     }
 
     // Move to View Space
     for (int i = 0; i < 3; ++i) {
-      triangle.vertices[i] = vec3_from_vec4(
-          mat4_mul_vec4(view_matrix, vec4_from_vec3(triangle.vertices[i])));
+      triangle.vertices[i] = mat4_mul_vec4(view_matrix, triangle.vertices[i]);
     }
 
     // Back face culling
-    vec3_t vertex_a = triangle.vertices[0];
-    vec3_t vertex_b = triangle.vertices[1];
-    vec3_t vertex_c = triangle.vertices[2];
+    vec3_t vertex_a = vec3_from_vec4(triangle.vertices[0]);
+    vec3_t vertex_b = vec3_from_vec4(triangle.vertices[1]);
+    vec3_t vertex_c = vec3_from_vec4(triangle.vertices[2]);
 
     vec3_t ab = vec3_sub(vertex_b, vertex_a);
     vec3_t ac = vec3_sub(vertex_c, vertex_a);
@@ -252,7 +255,7 @@ void update(app_state_t *app_state) {
 
     // perspective divide/projecion
     for (int j = 0; j < 3; ++j) {
-      vec4_t projected_points = vec4_from_vec3(triangle.vertices[j]);
+      vec4_t projected_points = triangle.vertices[j];
       projected_points = mat4_mul_vec4(
           perspective_matrix,
           projected_points); // Brings the values into the -1 and 1 range
@@ -260,9 +263,9 @@ void update(app_state_t *app_state) {
       projected_points.x /= projected_points.w;
       projected_points.y /= projected_points.w;
       projected_points.z /= projected_points.w;
-      projected_points.w /= projected_points.w;
+      // projected_points.w /= projected_points.w;
 
-      triangle.vertices[j] = vec3_from_vec4(projected_points);
+      triangle.vertices[j] = projected_points;
     }
 
     for (int j = 0; j < 3; ++j) {
@@ -284,8 +287,8 @@ void render(app_state_t *app_state) {
   display_clear_buffer(app_state, 0xFF000000);
   ////////////////////////////////////////////////////////////
   for (int i = 0; i < triangles_to_render_count; ++i) {
-    // draw_triangle_fill(triangles_to_render[i], app_state);
-    draw_triangle_wireframe(triangles_to_render[i], app_state);
+    draw_triangle_fill(triangles_to_render[i], &mesh.texture_data, app_state);
+    // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
   /////////////////////////////////////////
   //////////////////////

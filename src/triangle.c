@@ -1,6 +1,8 @@
 #include "triangle.h"
 #include "appstate.h"
 #include "display.h"
+#include "mesh.h"
+#include "texture.h"
 #include "utilities.h"
 #include "vector.h"
 #include <math.h>
@@ -50,15 +52,25 @@ bool is_top_flat_or_left(vec2_t edge) {
   return is_top_flat || is_left;
 }
 
-void draw_triangle_fill(triangle_t triangle, app_state_t *app_state) {
+void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
+                        app_state_t *app_state) {
   // the three vertices of the triangle
-  vec2_t v0 = vec2_from_vec3(triangle.vertices[0]);
-  vec2_t v1 = vec2_from_vec3(triangle.vertices[1]);
-  vec2_t v2 = vec2_from_vec3(triangle.vertices[2]);
+  vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
+  vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
+  vec2_t v2 = vec2_from_vec4(triangle.vertices[2]);
+  // the three texture coordinate for the three vertices
+  tex2_t v0_tex_coord = triangle.texcoords[0];
+  tex2_t v1_tex_coord = triangle.texcoords[1];
+  tex2_t v2_tex_coord = triangle.texcoords[2];
   // the color of each of this vertices
   color_t c0 = triangle.colors[0];
   color_t c1 = triangle.colors[1];
   color_t c2 = triangle.colors[2];
+  // the depth value of the three vertex points[needed for perspective correct
+  // interpolation]
+  float z0 = triangle.vertices[0].w;
+  float z1 = triangle.vertices[1].w;
+  float z2 = triangle.vertices[2].w;
   // Bounding box inside containing the three vertices of the triangle
   int x_min = min(v0.x, min(v1.x, v2.x));
   int y_min = min(v0.y, min(v1.y, v2.y));
@@ -112,10 +124,11 @@ void draw_triangle_fill(triangle_t triangle, app_state_t *app_state) {
       // check if the point is inside the triangle
       bool is_inside_triangle = w0 >= 0 && w1 >= 0 && w2 >= 0;
 
+      // Draw on the pixel if it is inside the triangle
       if (is_inside_triangle) {
-        float alpha = w0 / area;
-        float beta = w1 / area;
-        float gamma = w2 / area;
+        float alpha = w1 / area; // Edge v1->v2
+        float beta = w2 / area;  // Edge v2->v0
+        float gamma = w0 / area; // Edge v0->v1
 
         uint8_t a = 0xFF;
         uint8_t r = alpha * c0.r + beta * c1.r + gamma * c2.r;
@@ -127,6 +140,24 @@ void draw_triangle_fill(triangle_t triangle, app_state_t *app_state) {
         interpolated_color = (interpolated_color | b) << 8;
         interpolated_color = (interpolated_color | g) << 8;
         interpolated_color = interpolated_color | r;
+
+        // Interpolate on the UV coordinates to get the texture
+        float u = alpha * (v0_tex_coord.u / z0) + beta * (v1_tex_coord.u / z1) +
+                  gamma * (v2_tex_coord.u / z2);
+        float v = alpha * (v0_tex_coord.v / z0) + beta * (v1_tex_coord.v / z1) +
+                  gamma * (v2_tex_coord.v / z2);
+
+        float interpolated_z =
+            alpha * (1 / z0) + beta * (1 / z1) + gamma * (1 / z2);
+
+        u /= interpolated_z;
+        v /= interpolated_z;
+
+        int tex_x = abs((int)(u * texture_data->width) % texture_data->width);
+        int tex_y = abs((int)(v * texture_data->height) % texture_data->height);
+
+        interpolated_color =
+            texture_data->data[tex_x + (texture_data->width * tex_y)];
 
         display_draw_pixel(x, y, interpolated_color, app_state);
       }

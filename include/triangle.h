@@ -19,7 +19,7 @@
 //            b_uv           c_uv
 
 typedef struct {
-  vec3_t vertices[3];
+  vec4_t vertices[3];
   tex2_t texcoords[3];
 
   color_t colors[3];
@@ -30,12 +30,13 @@ typedef struct {
   int b;
   int c;
 
-  tex2_t a_uv;
-  tex2_t b_uv;
-  tex2_t c_uv;
+  int a_uv;
+  int b_uv;
+  int c_uv;
 
   uint32_t color;
 } face_t;
 
-void draw_triangle_fill(triangle_t triangle, app_state_t *app_state);
+void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
+                        app_state_t *app_state);
 void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);
