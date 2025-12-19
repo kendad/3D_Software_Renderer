@@ -10,3 +10,4 @@ typedef struct {
 
 float min(float a, float b);
 float max(float a, float b);
+float lerp(float a, float b, float t);

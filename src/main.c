@@ -1,5 +1,6 @@
 #include "appstate.h"
 #include "camera.h"
+#include "clipping.h"
 #include "config.h"
 #include "display.h"
 #include "matrix.h"
@@ -83,7 +84,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/f22.obj", "../assets/f22.png");
+  mesh = load_mesh_obj("../assets/cube.obj", "../assets/cube.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the base camera
@@ -218,9 +219,9 @@ void update(app_state_t *app_state) {
       // Rotations
       // transformed_points = mat4_mul_vec4(rotation_matrix_X,
       // transformed_points);
-      transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
-      // transformed_points = mat4_mul_vec4(rotation_matrix_Z,
-      // transformed_points);
+      // transformed_points = mat4_mul_vec4(rotation_matrix_Y,
+      // transformed_points); transformed_points =
+      // mat4_mul_vec4(rotation_matrix_Z, transformed_points);
 
       // Translation
       transformed_points =
@@ -253,32 +254,48 @@ void update(app_state_t *app_state) {
       continue;
     }
 
-    // perspective divide/projecion
+    // perspective projecion->perspective divide
     for (int j = 0; j < 3; ++j) {
+      // perspective projection
       vec4_t projected_points = triangle.vertices[j];
-      projected_points = mat4_mul_vec4(
-          perspective_matrix,
-          projected_points); // Brings the values into the -1 and 1 range
-      // perspective divide
-      projected_points.x /= projected_points.w;
-      projected_points.y /= projected_points.w;
-      projected_points.z /= projected_points.w;
-      // projected_points.w /= projected_points.w;
-
+      projected_points = mat4_mul_vec4(perspective_matrix, projected_points);
       triangle.vertices[j] = projected_points;
     }
 
-    for (int j = 0; j < 3; ++j) {
-      // scale NDC[-1 to 1] to SCREEN_SPACE[0,1]
-      triangle.vertices[j].x = (triangle.vertices[j].x + 1.0) * 0.5;
-      triangle.vertices[j].y = (triangle.vertices[j].y + 1.0) * 0.5;
+    // CLIPPING Space
+    polygon_t polygon = create_polygon_from_triangle(triangle);
+    clip_polygon(&polygon);
+    // after clipping we get new set of vertices which we will need to create
+    // new triangles
+    triangle_t triangles_after_clipping[MAX_NUM_POLYGON_VERTICES];
+    int num_triangles_after_clipping;
+    triangle_from_polygon(&polygon, triangles_after_clipping,
+                          &num_triangles_after_clipping);
 
-      // Scale the SCREEN_SPACE from[0,1] to [0,Width/Height]
-      triangle.vertices[j].x *= WINDOW_WIDTH;
-      triangle.vertices[j].y *= WINDOW_HEIGHT;
+    // loop through this new set of triangles
+    for (int ct = 0; ct < num_triangles_after_clipping;
+         ++ct) { // ct->clipped triangle
+      triangle = triangles_after_clipping[ct];
+      // perspective divide
+      for (int j = 0; j < 3; ++j) {
+        // Will also scale the values in the range [-1,1]
+        triangle.vertices[j].x /= triangle.vertices[j].w;
+        triangle.vertices[j].y /= triangle.vertices[j].w;
+        triangle.vertices[j].z /= triangle.vertices[j].w;
+      }
+
+      for (int j = 0; j < 3; ++j) {
+        // scale NDC[-1 to 1] to SCREEN_SPACE[0,1]
+        triangle.vertices[j].x = (triangle.vertices[j].x + 1.0) * 0.5;
+        triangle.vertices[j].y = (triangle.vertices[j].y + 1.0) * 0.5;
+
+        // Scale the SCREEN_SPACE from[0,1] to [0,Width/Height]
+        triangle.vertices[j].x *= WINDOW_WIDTH;
+        triangle.vertices[j].y *= WINDOW_HEIGHT;
+      }
+
+      triangles_to_render[triangles_to_render_count++] = triangle;
     }
-
-    triangles_to_render[triangles_to_render_count++] = triangle;
   }
   /////////////////////////////////////////////////////////////
 }

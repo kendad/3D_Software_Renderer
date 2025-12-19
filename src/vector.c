@@ -100,6 +100,11 @@ vec2_t vec2_from_vec3(vec3_t v) {
 ///////////////////// VECTOR 4D ///////////////////////
 ///////////////////////////////////////////////////////
 
+vec4_t vec4_clone(vec4_t *v) {
+  vec4_t new_vector = {.x = v->x, .y = v->y, .z = v->z, .w = v->w};
+  return new_vector;
+}
+
 vec4_t vec4_from_vec3(vec3_t v) {
   vec4_t new_vector = {.x = v.x, .y = v.y, .z = v.z, .w = 1.0};
   return new_vector;

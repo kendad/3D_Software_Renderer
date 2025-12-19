@@ -18,3 +18,8 @@ texture_t load_texture_data(char *filename) {
   texture_data.data = (uint32_t *)data;
   return texture_data;
 }
+
+tex2_t tex2_clone(tex2_t *t) {
+  tex2_t new_tex_coord = {.u = t->u, .v = t->v};
+  return new_tex_coord;
+}

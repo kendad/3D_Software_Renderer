@@ -14,3 +14,4 @@ typedef struct {
 } tex2_t;
 
 texture_t load_texture_data(char *filename);
+tex2_t tex2_clone(tex2_t *t);

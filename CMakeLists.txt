@@ -23,6 +23,7 @@ set(SOURCE_FILES
   src/mesh.c
   src/camera.c
   src/texture.c
+  src/clipping.c
 )
 
 add_compile_options(
