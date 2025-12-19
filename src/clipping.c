@@ -117,12 +117,15 @@ void clip_polygon_against_axis(polygon_t *polygon, clipping_axis axis) {
 
     // Move to the next vertex
     previous_vertex = current_vertex;
+    previous_texcoord = current_texcoord;
     current_vertex++;
+    current_texcoord++;
   }
 
   // at last update the polygon with the inside list of vertices
   for (int i = 0; i < num_inside_vertices; ++i) {
     polygon->vertices[i] = inside_vertices[i];
+    polygon->texcoords[i] = inside_texcoords[i];
   }
   polygon->num_vertices = num_inside_vertices;
 }
