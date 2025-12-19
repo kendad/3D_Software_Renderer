@@ -6,7 +6,7 @@ camera_t create_base_camera(void) {
                      .speed = 2.0,
                      .yaw = 0.0,
                      .pitch = 0.0,
-                     .mouse_sensitivity = 1.0,
+                     .mouse_sensitivity = 0.001,
                      .delta_x_mouse_movement = 0};
   return camera;
 }
