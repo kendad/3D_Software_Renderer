@@ -6,6 +6,7 @@
 
 typedef struct {
   vec3_t *vertices;
+  vec3_t *normals;
   tex2_t *tex_coords;
   face_t *faces;
   texture_t texture_data;

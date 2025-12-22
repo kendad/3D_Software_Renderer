@@ -2,7 +2,6 @@
 #include "appstate.h"
 #include "config.h"
 #include "display.h"
-#include "mesh.h"
 #include "texture.h"
 #include "utilities.h"
 #include "vector.h"

@@ -16,7 +16,6 @@
 #include <SDL_timer.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 void setup(app_state_t *app_state);
@@ -209,6 +208,9 @@ void update(app_state_t *app_state) {
     triangle.vertices[0] = vec4_from_vec3(mesh.vertices[mesh.faces[i].a]);
     triangle.vertices[1] = vec4_from_vec3(mesh.vertices[mesh.faces[i].b]);
     triangle.vertices[2] = vec4_from_vec3(mesh.vertices[mesh.faces[i].c]);
+    triangle.normals[0] = mesh.normals[mesh.faces[i].n_a];
+    triangle.normals[1] = mesh.normals[mesh.faces[i].n_b];
+    triangle.normals[2] = mesh.normals[mesh.faces[i].n_c];
     triangle.texcoords[0] = mesh.tex_coords[mesh.faces[i].a_uv];
     triangle.texcoords[1] = mesh.tex_coords[mesh.faces[i].b_uv];
     triangle.texcoords[2] = mesh.tex_coords[mesh.faces[i].c_uv];
@@ -223,11 +225,9 @@ void update(app_state_t *app_state) {
       transformed_points = mat4_mul_vec4(scale_matrix, transformed_points);
 
       // Rotations
-      // transformed_points = mat4_mul_vec4(rotation_matrix_X,
-      // transformed_points);
-      // transformed_points = mat4_mul_vec4(rotation_matrix_Y,
-      // transformed_points); transformed_points =
-      // mat4_mul_vec4(rotation_matrix_Z, transformed_points);
+      transformed_points = mat4_mul_vec4(rotation_matrix_X, transformed_points);
+      transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
+      transformed_points = mat4_mul_vec4(rotation_matrix_Z, transformed_points);
 
       // Translation
       transformed_points =

@@ -8,6 +8,7 @@
 //                  'a'
 //               vertices[0]
 //               texcoords[0]
+//               normals[0]
 //                   a_uv
 //                   /\
 //                  /  \
@@ -16,10 +17,12 @@
 //              'b'      'c'
 //        vertices[1]    vertices[2]
 //        texcoords[1]   texcoords[2]
+//        normals[1]     normals[2]
 //            b_uv           c_uv
 
 typedef struct {
   vec4_t vertices[3];
+  vec3_t normals[3];
   tex2_t texcoords[3];
 
   color_t colors[3];
@@ -29,6 +32,10 @@ typedef struct {
   int a;
   int b;
   int c;
+
+  int n_a;
+  int n_b;
+  int n_c;
 
   int a_uv;
   int b_uv;

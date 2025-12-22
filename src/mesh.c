@@ -1,7 +1,7 @@
 #include "mesh.h"
+#include "stb_image.h"
 #include "texture.h"
 #include "triangle.h"
-#include "utilities.h"
 #include "vector.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,9 +9,11 @@
 
 void free_mesh_data(mesh_t mesh) {
   free(mesh.vertices);
+  free(mesh.normals);
   free(mesh.tex_coords);
   free(mesh.faces);
-  free(mesh.texture_data.data);
+  // free(mesh.texture_data.data);
+  stbi_image_free(mesh.texture_data.data);
 }
 
 mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
@@ -28,6 +30,7 @@ mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
   // loop through the OBJ file line by line
   // to get the number of vertices and faces
   int number_of_vertices = 0;
+  int number_of_normals = 0;
   int number_of_texcoords = 0;
   int number_of_faces = 0;
   while (fgets(line, sizeof(line), file_pointer)) {
@@ -35,7 +38,11 @@ mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
     if (strncmp(line, "v ", 2) == 0) {
       number_of_vertices++;
     }
-    /// Parse the texture coordinate line
+    // Parse the Normal line
+    if (strncmp(line, "vn ", 3) == 0) {
+      number_of_normals++;
+    }
+    // Parse the texture coordinate line
     if (strncmp(line, "vt ", 3) == 0) {
       number_of_texcoords++;
     }
@@ -49,6 +56,8 @@ mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
   // memory space as well as the actual data
   mesh.vertices = malloc(sizeof(vec3_t) * number_of_vertices);
   int current_vertex = 0;
+  mesh.normals = malloc(sizeof(vec3_t) * number_of_normals);
+  int current_normal = 0;
   mesh.tex_coords = malloc(sizeof(tex2_t) * number_of_texcoords);
   int current_texcoord = 0;
   mesh.faces = malloc(sizeof(face_t) * number_of_faces);
@@ -89,6 +98,9 @@ mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
       face_t face = {.a = vertex_indices[0] - 1,
                      .b = vertex_indices[1] - 1,
                      .c = vertex_indices[2] - 1,
+                     .n_a = normal_indices[0] - 1,
+                     .n_b = normal_indices[1] - 1,
+                     .n_c = normal_indices[2] - 1,
                      .a_uv = texture_indices[0] - 1,
                      .b_uv = texture_indices[1] - 1,
                      .c_uv = texture_indices[2] - 1,
