@@ -2,10 +2,12 @@
 #include "appstate.h"
 #include "config.h"
 #include "display.h"
+#include "lights.h"
 #include "texture.h"
 #include "utilities.h"
 #include "vector.h"
 #include <math.h>
+#include <stdint.h>
 
 // Digital Differential Analyzer(DDA) line drawing algorithm
 void draw_line(float x0, float y0, float x1, float y1, app_state_t *app_state) {
@@ -53,11 +55,24 @@ bool is_top_flat_or_left(vec2_t edge) {
 }
 
 void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
+                        light_t lights[], int total_lights_in_scene,
                         app_state_t *app_state) {
-  // the three vertices of the triangle
+  // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
   vec2_t v2 = vec2_from_vec4(triangle.vertices[2]);
+  // the three vertices of the triangle in vec4
+  vec4_t v0_pos = triangle.view_space_vertices[0];
+  vec4_t v1_pos = triangle.view_space_vertices[1];
+  vec4_t v2_pos = triangle.view_space_vertices[2];
+  // the three normals od the triangle
+  vec3_t v0_normal = triangle.normals[0];
+  vec3_t v1_normal = triangle.normals[1];
+  vec3_t v2_normal = triangle.normals[2];
+  // Renormalize the normals as rotations/scale might have change their values
+  vec3_normalize(&v0_normal);
+  vec3_normalize(&v1_normal);
+  vec3_normalize(&v2_normal);
   // the three texture coordinate for the three vertices
   tex2_t v0_tex_coord = triangle.texcoords[0];
   tex2_t v1_tex_coord = triangle.texcoords[1];
@@ -158,6 +173,74 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
 
         interpolated_color =
             texture_data->data[tex_x + (texture_data->width * tex_y)];
+
+        // // interpolate on the positions
+        float pos_x = alpha * (v0_pos.x / z0) + beta * (v1_pos.x / z1) +
+                      gamma * (v2_pos.x / z2);
+        pos_x /= interpolated_z;
+
+        float pos_y = alpha * (v0_pos.y / z0) + beta * (v1_pos.y / z1) +
+                      gamma * (v2_pos.y / z2);
+        pos_y /= interpolated_z;
+
+        float pos_z = alpha * (v0_pos.z / z0) + beta * (v1_pos.z / z1) +
+                      gamma * (v2_pos.z / z2);
+        pos_z /= interpolated_z;
+
+        vec3_t interpolated_position = {.x = pos_x, .y = pos_y, .z = pos_z};
+
+        // // Interpolate on the normals
+        float normal_x = alpha * (v0_normal.x / z0) +
+                         beta * (v1_normal.x / z1) + gamma * (v2_normal.x / z2);
+        normal_x /= interpolated_z;
+
+        float normal_y = alpha * (v0_normal.y / z0) +
+                         beta * (v1_normal.y / z1) + gamma * (v2_normal.y / z2);
+        normal_y /= interpolated_z;
+
+        float normal_z = alpha * (v0_normal.z / z0) +
+                         beta * (v1_normal.z / z1) + gamma * (v2_normal.z / z2);
+        normal_z /= interpolated_z;
+
+        vec3_t interpolated_normal = {
+            .x = normal_x, .y = normal_y, .z = normal_z};
+        vec3_normalize(&interpolated_normal);
+
+        for (int l = 0; l < total_lights_in_scene; ++l) {
+          light_t light = lights[l];
+          vec3_t light_direction =
+              vec3_sub(light.position, interpolated_position);
+          vec3_normalize(&light_direction);
+          float intensity = vec3_dot(interpolated_normal, light_direction);
+          if (intensity < 0)
+            intensity = 0;
+
+          // extract the light color RGBA values
+          uint32_t r_light = (light.color >> 16) & 0xFF;
+          uint32_t g_light = (light.color >> 8) & 0xFF;
+          uint32_t b_light = (light.color >> 0) & 0xFF;
+
+          // extract the interpolated_color RGBA values
+          uint32_t a = (interpolated_color >> 24) & 0xFF;
+          uint32_t r = (interpolated_color >> 16) & 0xFF;
+          uint32_t g = (interpolated_color >> 8) & 0xFF;
+          uint32_t b = (interpolated_color >> 0) & 0xFF;
+
+          // apply intensity
+          r = (uint32_t)(r * (r_light / 255.0) * intensity);
+          g = (uint32_t)(g * (g_light / 255.0) * intensity);
+          b = (uint32_t)(b * (b_light / 255.0) * intensity);
+
+          if (r > 255)
+            r = 255;
+          if (g > 255)
+            g = 255;
+          if (b > 255)
+            b = 255;
+
+          uint32_t light_modified_color = (a << 24) | (r << 16) | (g << 8) | b;
+          interpolated_color = light_modified_color;
+        }
 
         if (interpolated_z > app_state->z_buffer[x + (WINDOW_WIDTH * y)]) {
           display_draw_pixel(x, y, interpolated_color, app_state);

@@ -91,7 +91,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/cube.obj", "../assets/cube.png");
+  mesh = load_mesh_obj("../assets/drone.obj", "../assets/drone.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the lights in the scene
@@ -216,7 +216,6 @@ void update(app_state_t *app_state) {
   for (int l = 0; l < total_lights_in_scene; ++l) {
     view_space_lights[l].position = vec3_from_vec4(
         mat4_mul_vec4(view_matrix, vec4_from_vec3(lights[l].position)));
-    view_space_lights[l].color = lights[l].color;
   }
 
   // loop through all the faces/triangles
@@ -267,8 +266,6 @@ void update(app_state_t *app_state) {
     // Move the vertices and normals to View Space
     for (int j = 0; j < 3; ++j) {
       triangle.vertices[j] = mat4_mul_vec4(view_matrix, triangle.vertices[j]);
-      // store the view space vertices that will be further used for lighting
-      // calculations
       triangle.view_space_vertices[j] = triangle.vertices[j];
       triangle.normals[j] = vec3_from_vec4(
           mat4_mul_vec4(view_matrix, vec4_from_vec3(triangle.normals[j])));
@@ -344,8 +341,8 @@ void render(app_state_t *app_state) {
   display_clear_depth_buffer(app_state);
   ////////////////////////////////////////////////////////////
   for (int i = 0; i < triangles_to_render_count; ++i) {
-    draw_triangle_fill(triangles_to_render[i], &mesh.texture_data,
-                       view_space_lights, total_lights_in_scene, app_state);
+    draw_triangle_fill(triangles_to_render[i], &mesh.texture_data, lights,
+                       total_lights_in_scene, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
   /////////////////////////////////////////

@@ -1,5 +1,6 @@
 #pragma once
 #include "appstate.h"
+#include "lights.h"
 #include "texture.h"
 #include "utilities.h"
 #include "vector.h"
@@ -22,6 +23,7 @@
 
 typedef struct {
   vec4_t vertices[3];
+  vec4_t view_space_vertices[3];
   vec3_t normals[3];
   tex2_t texcoords[3];
 
@@ -45,5 +47,7 @@ typedef struct {
 } face_t;
 
 void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
+                        light_t lights[], int total_lights_in_scene,
                         app_state_t *app_state);
+
 void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);

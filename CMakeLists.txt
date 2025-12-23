@@ -24,6 +24,7 @@ set(SOURCE_FILES
   src/camera.c
   src/texture.c
   src/clipping.c
+  src/lights.c
 )
 
 add_compile_options(

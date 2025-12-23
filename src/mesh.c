@@ -78,6 +78,13 @@ mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
       mesh.vertices[current_vertex++] = vertex;
     }
 
+    // Parse the normal line
+    if (strncmp(line, "vn ", 3) == 0) {
+      vec3_t normal;
+      sscanf(line, "vn %f %f %f", &normal.x, &normal.y, &normal.z);
+      mesh.normals[current_normal++] = normal;
+    }
+
     // Parse the vertex coordinate line
     if (strncmp(line, "vt ", 3) == 0) {
       tex2_t texcoord;
