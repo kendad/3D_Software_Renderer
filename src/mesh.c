@@ -82,6 +82,7 @@ mesh_t load_mesh_obj(char *obj_filename, char *texture_filename) {
     if (strncmp(line, "vn ", 3) == 0) {
       vec3_t normal;
       sscanf(line, "vn %f %f %f", &normal.x, &normal.y, &normal.z);
+      normal.y *= -1;
       mesh.normals[current_normal++] = normal;
     }
 

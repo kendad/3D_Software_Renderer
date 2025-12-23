@@ -91,7 +91,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/cube.obj", "../assets/cube.png");
+  mesh = load_mesh_obj("../assets/f22.obj", "../assets/f22.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the lights in the scene
@@ -212,10 +212,11 @@ void update(app_state_t *app_state) {
   mat4_t view_matrix =
       mat4_make_look_at(camera.position, camera_target, camera_up_vector);
 
-  // move the lighs into View Space
+  // move the lights into View Space
   for (int l = 0; l < total_lights_in_scene; ++l) {
-    view_space_lights[l].position = vec3_from_vec4(
-        mat4_mul_vec4(view_matrix, vec4_from_vec3(lights[l].position)));
+    vec4_t light_pos = vec4_from_vec3(lights[l].position);
+    view_space_lights[l].position =
+        vec3_from_vec4(mat4_mul_vec4(view_matrix, light_pos));
     view_space_lights[l].color = lights[l].color;
   }
 
@@ -248,7 +249,7 @@ void update(app_state_t *app_state) {
       transformed_points = mat4_mul_vec4(rotation_matrix_Y, transformed_points);
       transformed_points = mat4_mul_vec4(rotation_matrix_Z, transformed_points);
 
-      // Also Rotate and Scale the normals
+      // Also Rotate the normals
       transformed_normals =
           mat4_mul_vec4(rotation_matrix_X, transformed_normals);
       transformed_normals =
@@ -267,11 +268,15 @@ void update(app_state_t *app_state) {
     // Move the vertices and normals to View Space
     for (int j = 0; j < 3; ++j) {
       triangle.vertices[j] = mat4_mul_vec4(view_matrix, triangle.vertices[j]);
+
       // store the view space vertices that will be further used for lighting
       // calculations
       triangle.view_space_vertices[j] = triangle.vertices[j];
-      triangle.normals[j] = vec3_from_vec4(
-          mat4_mul_vec4(view_matrix, vec4_from_vec3(triangle.normals[j])));
+
+      vec4_t normal = vec4_from_vec3(triangle.normals[j]);
+      normal.w = 0.0;
+      triangle.normals[j] = vec3_from_vec4(mat4_mul_vec4(view_matrix, normal));
+      vec3_normalize(&triangle.normals[j]);
     }
 
     // Back face culling

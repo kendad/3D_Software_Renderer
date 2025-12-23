@@ -2,14 +2,14 @@
 #include "utilities.h"
 #include "vector.h"
 #include <stdint.h>
-#include <stdio.h>
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
     return;
   vec3_t light1_pos = {.x = 0, .y = 5.0, .z = 0};
   color_t yellow_light = {.r = 0x00, .g = 0xFF, .b = 0x00, .a = 0xFF};
-  light_t light1 = {.position = light1_pos, create_color_uint32(yellow_light)};
+  light_t light1 = {.position = light1_pos,
+                    .color = create_color_uint32(yellow_light)};
   lights[*number_of_lights] = light1;
   (*number_of_lights)++;
 }

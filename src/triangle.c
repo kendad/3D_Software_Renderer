@@ -61,31 +61,33 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
   vec2_t v2 = vec2_from_vec4(triangle.vertices[2]);
+
   // the three vertices of the triangle in vec4
   vec4_t v0_pos = triangle.view_space_vertices[0];
   vec4_t v1_pos = triangle.view_space_vertices[1];
   vec4_t v2_pos = triangle.view_space_vertices[2];
-  // the three normals od the triangle
+
+  // the three normals of the triangle
   vec3_t v0_normal = triangle.normals[0];
   vec3_t v1_normal = triangle.normals[1];
   vec3_t v2_normal = triangle.normals[2];
+
   // Renormalize the normals as rotations/scale might have change their values
   vec3_normalize(&v0_normal);
   vec3_normalize(&v1_normal);
   vec3_normalize(&v2_normal);
+
   // the three texture coordinate for the three vertices
   tex2_t v0_tex_coord = triangle.texcoords[0];
   tex2_t v1_tex_coord = triangle.texcoords[1];
   tex2_t v2_tex_coord = triangle.texcoords[2];
-  // the color of each of this vertices
-  color_t c0 = triangle.colors[0];
-  color_t c1 = triangle.colors[1];
-  color_t c2 = triangle.colors[2];
+
   // the depth value of the three vertex points[needed for perspective correct
   // interpolation]
   float z0 = triangle.vertices[0].w;
   float z1 = triangle.vertices[1].w;
   float z2 = triangle.vertices[2].w;
+
   // Bounding box inside containing the three vertices of the triangle
   int x_min = min(v0.x, min(v1.x, v2.x));
   int y_min = min(v0.y, min(v1.y, v2.y));
@@ -145,17 +147,6 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
         float beta = w2 / area;  // Edge v2->v0
         float gamma = w0 / area; // Edge v0->v1
 
-        uint8_t a = 0xFF;
-        uint8_t r = alpha * c0.r + beta * c1.r + gamma * c2.r;
-        uint8_t g = alpha * c0.g + beta * c1.g + gamma * c2.g;
-        uint8_t b = alpha * c0.b + beta * c1.b + gamma * c2.b;
-
-        uint32_t interpolated_color = 0x00000000;
-        interpolated_color = (interpolated_color | a) << 8;
-        interpolated_color = (interpolated_color | b) << 8;
-        interpolated_color = (interpolated_color | g) << 8;
-        interpolated_color = interpolated_color | r;
-
         // Interpolate on the UV coordinates to get the texture
         float u = alpha * (v0_tex_coord.u / z0) + beta * (v1_tex_coord.u / z1) +
                   gamma * (v2_tex_coord.u / z2);
@@ -171,7 +162,7 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
         int tex_x = abs((int)(u * texture_data->width) % texture_data->width);
         int tex_y = abs((int)(v * texture_data->height) % texture_data->height);
 
-        interpolated_color =
+        uint32_t interpolated_color =
             texture_data->data[tex_x + (texture_data->width * tex_y)];
 
         // // interpolate on the positions
@@ -206,6 +197,7 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
             .x = normal_x, .y = normal_y, .z = normal_z};
         vec3_normalize(&interpolated_normal);
 
+        // lighting calculatons
         for (int l = 0; l < total_lights_in_scene; ++l) {
           light_t light = lights[l];
           vec3_t light_direction =
@@ -230,6 +222,11 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
           r = (uint32_t)(r * (r_light / 255.0) * intensity);
           g = (uint32_t)(g * (g_light / 255.0) * intensity);
           b = (uint32_t)(b * (b_light / 255.0) * intensity);
+
+          // color the normals for debugging purpose
+          // r = (uint32_t)(((interpolated_normal.x + 1.0) * 0.5) * 255.0);
+          // g = (uint32_t)(((interpolated_normal.y + 1.0) * 0.5) * 255.0);
+          // b = (uint32_t)(((interpolated_normal.z + 1.0) * 0.5) * 255.0);
 
           if (r > 255)
             r = 255;
