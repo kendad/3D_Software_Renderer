@@ -236,7 +236,7 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
             b = 255;
 
           uint32_t light_modified_color = (a << 24) | (r << 16) | (g << 8) | b;
-          // interpolated_color = light_modified_color;
+          interpolated_color = light_modified_color;
         }
 
         if (interpolated_z > app_state->z_buffer[x + (WINDOW_WIDTH * y)]) {
