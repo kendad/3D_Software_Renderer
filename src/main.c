@@ -76,6 +76,7 @@ float scale_Y = 1.0;
 // CAMERA INITIALIZER
 camera_t camera;
 // UP vector for the camera
+vec3_t camera_position_at_view_space = {0, 0, 0};
 vec3_t camera_up_vector = {0, 1, 0};
 // PROJECTION INITIALIZER
 const float fov_vertical = M_PI / 3.0;
@@ -91,7 +92,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/crab.obj", "../assets/crab.png");
+  mesh = load_mesh_obj("../assets/cube.obj", "../assets/cube.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the lights in the scene
@@ -352,7 +353,8 @@ void render(app_state_t *app_state) {
   ////////////////////////////////////////////////////////////
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill(triangles_to_render[i], &mesh.texture_data,
-                       view_space_lights, total_lights_in_scene, app_state);
+                       view_space_lights, total_lights_in_scene,
+                       camera_position_at_view_space, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
   /////////////////////////////////////////

@@ -56,7 +56,7 @@ bool is_top_flat_or_left(vec2_t edge) {
 
 void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
                         light_t lights[], int total_lights_in_scene,
-                        app_state_t *app_state) {
+                        vec3_t camera_position, app_state_t *app_state) {
   // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
@@ -197,71 +197,12 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
             .x = normal_x, .y = normal_y, .z = normal_z};
         vec3_normalize(&interpolated_normal);
 
-        // lighting calculatons
-        float ambient_strength = 0.2;
-        float specular_strength = 1.5;
-        vec3_t camera_position = {0, 0, 0};
+        // get the phong lighting effect on the iterpolated color
+        interpolated_color = light_phong(
+            lights, total_lights_in_scene, interpolated_position,
+            camera_position, interpolated_normal, interpolated_color);
 
-        float light_total_r = ambient_strength,
-              light_total_g = ambient_strength,
-              light_total_b = ambient_strength;
-
-        for (int l = 0; l < total_lights_in_scene; ++l) {
-          light_t light = lights[l];
-
-          vec3_t light_direction =
-              vec3_sub(light.position, interpolated_position);
-          vec3_normalize(&light_direction);
-
-          vec3_t view_direction =
-              vec3_sub(camera_position, interpolated_position);
-          vec3_normalize(&view_direction);
-          vec3_t reflection_direction =
-              light_reflect(light_direction, interpolated_normal);
-
-          float spec = vec3_dot(view_direction, reflection_direction);
-          if (spec < 0)
-            spec = 0.0;
-          spec = powf(spec, 32.0);
-          float specular = spec * specular_strength;
-
-          float diffuse = vec3_dot(interpolated_normal, light_direction);
-          if (diffuse < 0.0)
-            diffuse = 0;
-
-          // extract light color as float in the range [0,1]
-          float light_color_r = ((light.color >> 16) & 0xFF) / 255.0;
-          float light_color_g = ((light.color >> 8) & 0xFF) / 255.0;
-          float light_color_b = (light.color & 0xFF) / 255.0;
-
-          // Accummulate the light
-          light_total_r += (diffuse + specular) * light_color_r;
-          light_total_g += (diffuse + specular) * light_color_g;
-          light_total_b += (diffuse + specular) * light_color_b;
-        }
-
-        // extract the r g b a from the interpolated texture color
-        uint32_t tex_color_a = (interpolated_color >> 24) & 0xFF;
-        uint32_t tex_color_r = (interpolated_color >> 16) & 0xFF;
-        uint32_t tex_color_g = (interpolated_color >> 8) & 0xFF;
-        uint32_t tex_color_b = (interpolated_color >> 0) & 0xFF;
-
-        // combine the light with the texture colors for lighting effect
-        uint32_t final_r = (uint32_t)(tex_color_r * light_total_r);
-        uint32_t final_g = (uint32_t)(tex_color_g * light_total_g);
-        uint32_t final_b = (uint32_t)(tex_color_b * light_total_b);
-        // clamp the final colors to 255.0
-        if (final_r > 255)
-          final_r = 255;
-        if (final_g > 255)
-          final_g = 255;
-        if (final_b > 255)
-          final_b = 255;
-
-        // combine the modified r g b values into the final color for the vertex
-        interpolated_color =
-            (tex_color_a << 24) | (final_r << 16) | (final_g << 8) | final_b;
-
+        // Check and update the z_buffer
         if (interpolated_z > app_state->z_buffer[x + (WINDOW_WIDTH * y)]) {
           display_draw_pixel(x, y, interpolated_color, app_state);
           app_state->z_buffer[x + (WINDOW_WIDTH * y)] = interpolated_z;
