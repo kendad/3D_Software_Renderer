@@ -198,46 +198,51 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
         vec3_normalize(&interpolated_normal);
 
         // lighting calculatons
+        float light_total_r = 0.0, light_total_g = 0.0, light_total_b = 0.0;
+        float ambient_strength = 0.2;
+
         for (int l = 0; l < total_lights_in_scene; ++l) {
           light_t light = lights[l];
+
           vec3_t light_direction =
               vec3_sub(light.position, interpolated_position);
           vec3_normalize(&light_direction);
-          float intensity = vec3_dot(interpolated_normal, light_direction);
-          if (intensity < 0)
-            intensity = 0;
+          float diffuse = vec3_dot(interpolated_normal, light_direction);
+          if (diffuse < 0.0)
+            diffuse = 0;
 
-          // extract the light color RGBA values
-          uint32_t r_light = (light.color >> 16) & 0xFF;
-          uint32_t g_light = (light.color >> 8) & 0xFF;
-          uint32_t b_light = (light.color >> 0) & 0xFF;
+          // extract light color as float in the range [0,1]
+          float light_color_r = ((light.color >> 16) & 0xFF) / 255.0;
+          float light_color_g = ((light.color >> 8) & 0xFF) / 255.0;
+          float light_color_b = (light.color & 0xFF) / 255.0;
 
-          // extract the interpolated_color RGBA values
-          uint32_t a = (interpolated_color >> 24) & 0xFF;
-          uint32_t r = (interpolated_color >> 16) & 0xFF;
-          uint32_t g = (interpolated_color >> 8) & 0xFF;
-          uint32_t b = (interpolated_color >> 0) & 0xFF;
-
-          // apply intensity
-          r = (uint32_t)(r * (r_light / 255.0) * intensity);
-          g = (uint32_t)(g * (g_light / 255.0) * intensity);
-          b = (uint32_t)(b * (b_light / 255.0) * intensity);
-
-          // color the normals for debugging purpose
-          // r = (uint32_t)(((interpolated_normal.x + 1.0) * 0.5) * 255.0);
-          // g = (uint32_t)(((interpolated_normal.y + 1.0) * 0.5) * 255.0);
-          // b = (uint32_t)(((interpolated_normal.z + 1.0) * 0.5) * 255.0);
-
-          if (r > 255)
-            r = 255;
-          if (g > 255)
-            g = 255;
-          if (b > 255)
-            b = 255;
-
-          uint32_t light_modified_color = (a << 24) | (r << 16) | (g << 8) | b;
-          interpolated_color = light_modified_color;
+          // Accummulate the light
+          light_total_r += (ambient_strength + diffuse) * light_color_r;
+          light_total_g += (ambient_strength + diffuse) * light_color_g;
+          light_total_b += (ambient_strength + diffuse) * light_color_b;
         }
+
+        // extract the r g b a from the interpolated texture color
+        uint32_t tex_color_a = (interpolated_color >> 24) & 0xFF;
+        uint32_t tex_color_r = (interpolated_color >> 16) & 0xFF;
+        uint32_t tex_color_g = (interpolated_color >> 8) & 0xFF;
+        uint32_t tex_color_b = (interpolated_color >> 0) & 0xFF;
+
+        // combine the light with the texture colors for lighting effect
+        uint32_t final_r = (uint32_t)(tex_color_r * light_total_r);
+        uint32_t final_g = (uint32_t)(tex_color_g * light_total_g);
+        uint32_t final_b = (uint32_t)(tex_color_b * light_total_b);
+        // clamp the final colors to 255.0
+        if (final_r > 255)
+          final_r = 255;
+        if (final_g > 255)
+          final_g = 255;
+        if (final_b > 255)
+          final_b = 255;
+
+        // combine the modified r g b values into the final color for the vertex
+        interpolated_color =
+            (tex_color_a << 24) | (final_r << 16) | (final_g << 8) | final_b;
 
         if (interpolated_z > app_state->z_buffer[x + (WINDOW_WIDTH * y)]) {
           display_draw_pixel(x, y, interpolated_color, app_state);
