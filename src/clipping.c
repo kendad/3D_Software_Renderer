@@ -9,6 +9,8 @@ typedef enum { TOP, BOTTOM, LEFT, RIGHT, NEAR, FAR } clipping_axis;
 polygon_t create_polygon_from_triangle(triangle_t triangle) {
   polygon_t polygon = {.vertices = {triangle.vertices[0], triangle.vertices[1],
                                     triangle.vertices[2]},
+                       .normals = {triangle.normals[0], triangle.normals[1],
+                                   triangle.normals[2]},
                        .texcoords = {triangle.texcoords[0],
                                      triangle.texcoords[1],
                                      triangle.texcoords[2]},
@@ -68,13 +70,17 @@ float get_lerp_factor(vec4_t *v0, vec4_t *v1, clipping_axis axis) {
 
 void clip_polygon_against_axis(polygon_t *polygon, clipping_axis axis) {
   vec4_t inside_vertices[MAX_NUM_POLYGON_VERTICES];
+  vec3_t inside_normals[MAX_NUM_POLYGON_VERTICES];
   tex2_t inside_texcoords[MAX_NUM_POLYGON_VERTICES];
   int num_inside_vertices = 0;
   // Loop through all the vertices in the polygon vertices and check if they
   // are inside/outside the [-w to w] range
   vec4_t *current_vertex = &polygon->vertices[0];
+  vec3_t *current_normal = &polygon->normals[0];
   tex2_t *current_texcoord = &polygon->texcoords[0];
+
   vec4_t *previous_vertex = &polygon->vertices[polygon->num_vertices - 1];
+  vec3_t *previous_normal = &polygon->normals[polygon->num_vertices - 1];
   tex2_t *previous_texcoord = &polygon->texcoords[polygon->num_vertices - 1];
 
   while (current_vertex != &polygon->vertices[polygon->num_vertices]) {
@@ -97,13 +103,22 @@ void clip_polygon_against_axis(polygon_t *polygon, clipping_axis axis) {
           .w = lerp(previous_vertex->w, current_vertex->w, t),
       };
 
-      // perspective corrected interpolated texture coord
+      vec3_t interpolated_normal = {
+          .x = lerp(previous_normal->x, current_normal->x, t),
+          .y = lerp(previous_normal->y, current_normal->y, t),
+          .z = lerp(previous_normal->z, current_normal->z, t),
+      };
+      vec3_normalize(&interpolated_normal);
+
+      // perspective corrected interpolated texture coord of the intersection
+      // point
       tex2_t interpolated_texture_coord = {
           .u = lerp(previous_texcoord->u, current_texcoord->u, t),
           .v = lerp(previous_texcoord->v, current_texcoord->v, t)};
 
       // put the new itersection point inside the list
       inside_vertices[num_inside_vertices] = intersection_point;
+      inside_normals[num_inside_vertices] = interpolated_normal;
       inside_texcoords[num_inside_vertices] = interpolated_texture_coord;
       num_inside_vertices++;
     }
@@ -111,20 +126,24 @@ void clip_polygon_against_axis(polygon_t *polygon, clipping_axis axis) {
     // if the current vertex is inside then put it in the list
     if (is_current_vertex_inside) {
       inside_vertices[num_inside_vertices] = vec4_clone(current_vertex);
+      inside_normals[num_inside_vertices] = vec3_clone(current_normal);
       inside_texcoords[num_inside_vertices] = tex2_clone(current_texcoord);
       num_inside_vertices++;
     }
 
     // Move to the next vertex
     previous_vertex = current_vertex;
+    previous_normal = current_normal;
     previous_texcoord = current_texcoord;
     current_vertex++;
+    current_normal++;
     current_texcoord++;
   }
 
-  // at last update the polygon with the inside list of vertices
+  // at last: -> update the polygon with the inside list of vertices
   for (int i = 0; i < num_inside_vertices; ++i) {
     polygon->vertices[i] = inside_vertices[i];
+    polygon->normals[i] = inside_normals[i];
     polygon->texcoords[i] = inside_texcoords[i];
   }
   polygon->num_vertices = num_inside_vertices;
@@ -150,6 +169,10 @@ void triangle_from_polygon(polygon_t *polygon, triangle_t *triangles,
     triangles[i].vertices[0] = polygon->vertices[index0];
     triangles[i].vertices[1] = polygon->vertices[index1];
     triangles[i].vertices[2] = polygon->vertices[index2];
+
+    triangles[i].normals[0] = polygon->normals[index0];
+    triangles[i].normals[1] = polygon->normals[index1];
+    triangles[i].normals[2] = polygon->normals[index2];
 
     triangles[i].texcoords[0] = polygon->texcoords[index0];
     triangles[i].texcoords[1] = polygon->texcoords[index1];

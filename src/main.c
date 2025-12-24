@@ -148,7 +148,7 @@ void process_input(app_state_t *app_state) {
         camera.position = vec3_sub(camera.position, right_vector);
         break;
       }
-      // ROTATION controls
+      // ROTATION controls on the keyboard
       // YAW
       if (event.key.keysym.sym == SDLK_RIGHT) {
         camera.yaw += camera.mouse_sensitivity * app_state->delta_time;
@@ -241,6 +241,7 @@ void update(app_state_t *app_state) {
     for (int j = 0; j < 3; ++j) {
       vec4_t transformed_points = triangle.vertices[j];
       vec4_t transformed_normals = vec4_from_vec3(triangle.normals[j]);
+
       // Scale
       transformed_points = mat4_mul_vec4(scale_matrix, transformed_points);
 
@@ -274,7 +275,8 @@ void update(app_state_t *app_state) {
       triangle.view_space_vertices[j] = triangle.vertices[j];
 
       vec4_t normal = vec4_from_vec3(triangle.normals[j]);
-      normal.w = 0.0;
+      normal.w = 0.0; // this removes translation from the normal as we dont
+                      // want to move normals only rotate them
       triangle.normals[j] = vec3_from_vec4(mat4_mul_vec4(view_matrix, normal));
       vec3_normalize(&triangle.normals[j]);
     }

@@ -7,6 +7,7 @@
 
 typedef struct {
   vec4_t vertices[MAX_NUM_POLYGON_VERTICES];
+  vec3_t normals[MAX_NUM_POLYGON_VERTICES];
   tex2_t texcoords[MAX_NUM_POLYGON_VERTICES];
   int num_vertices;
 } polygon_t;
