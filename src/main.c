@@ -119,13 +119,13 @@ void process_input(app_state_t *app_state) {
     case SDL_QUIT:
       app_state->is_running = false;
       break;
-    case SDL_MOUSEMOTION: {
-      int x_offset = event.motion.xrel;
-      int y_offset = event.motion.yrel;
-      camera.yaw += x_offset * camera.mouse_sensitivity;
-      camera.pitch -= y_offset * camera.mouse_sensitivity;
-      break;
-    }
+    // case SDL_MOUSEMOTION: {
+    //   int x_offset = event.motion.xrel;
+    //   int y_offset = event.motion.yrel;
+    //   camera.yaw += x_offset * camera.mouse_sensitivity;
+    //   camera.pitch -= y_offset * camera.mouse_sensitivity;
+    //   break;
+    // }
     case SDL_KEYDOWN:
       if (event.key.keysym.sym == SDLK_ESCAPE) {
         app_state->is_running = false;
