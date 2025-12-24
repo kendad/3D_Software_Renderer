@@ -25,6 +25,7 @@ vec3_t light_reflect(vec3_t light_direction, vec3_t normal) {
   vec3_mul(&normal, l_dot_n);
 
   vec3_t reflection_direction = vec3_sub(normal, light_direction);
+  vec3_normalize(&reflection_direction);
   return reflection_direction;
 }
 

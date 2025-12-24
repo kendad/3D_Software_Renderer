@@ -198,8 +198,13 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
         vec3_normalize(&interpolated_normal);
 
         // lighting calculatons
-        float light_total_r = 0.0, light_total_g = 0.0, light_total_b = 0.0;
         float ambient_strength = 0.2;
+        float specular_strength = 1.5;
+        vec3_t camera_position = {0, 0, 0};
+
+        float light_total_r = ambient_strength,
+              light_total_g = ambient_strength,
+              light_total_b = ambient_strength;
 
         for (int l = 0; l < total_lights_in_scene; ++l) {
           light_t light = lights[l];
@@ -207,6 +212,19 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
           vec3_t light_direction =
               vec3_sub(light.position, interpolated_position);
           vec3_normalize(&light_direction);
+
+          vec3_t view_direction =
+              vec3_sub(camera_position, interpolated_position);
+          vec3_normalize(&view_direction);
+          vec3_t reflection_direction =
+              light_reflect(light_direction, interpolated_normal);
+
+          float spec = vec3_dot(view_direction, reflection_direction);
+          if (spec < 0)
+            spec = 0.0;
+          spec = powf(spec, 32.0);
+          float specular = spec * specular_strength;
+
           float diffuse = vec3_dot(interpolated_normal, light_direction);
           if (diffuse < 0.0)
             diffuse = 0;
@@ -217,9 +235,9 @@ void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
           float light_color_b = (light.color & 0xFF) / 255.0;
 
           // Accummulate the light
-          light_total_r += (ambient_strength + diffuse) * light_color_r;
-          light_total_g += (ambient_strength + diffuse) * light_color_g;
-          light_total_b += (ambient_strength + diffuse) * light_color_b;
+          light_total_r += (diffuse + specular) * light_color_r;
+          light_total_g += (diffuse + specular) * light_color_g;
+          light_total_b += (diffuse + specular) * light_color_b;
         }
 
         // extract the r g b a from the interpolated texture color
