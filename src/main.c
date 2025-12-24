@@ -17,6 +17,7 @@
 #include <SDL_timer.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 void setup(app_state_t *app_state);
@@ -119,13 +120,13 @@ void process_input(app_state_t *app_state) {
     case SDL_QUIT:
       app_state->is_running = false;
       break;
-    // case SDL_MOUSEMOTION: {
-    //   int x_offset = event.motion.xrel;
-    //   int y_offset = event.motion.yrel;
-    //   camera.yaw += x_offset * camera.mouse_sensitivity;
-    //   camera.pitch -= y_offset * camera.mouse_sensitivity;
-    //   break;
-    // }
+    case SDL_MOUSEMOTION: {
+      int x_offset = event.motion.xrel;
+      int y_offset = event.motion.yrel;
+      camera.yaw += x_offset * camera.mouse_sensitivity;
+      camera.pitch -= y_offset * camera.mouse_sensitivity;
+      break;
+    }
     case SDL_KEYDOWN:
       if (event.key.keysym.sym == SDLK_ESCAPE) {
         app_state->is_running = false;
@@ -146,31 +147,6 @@ void process_input(app_state_t *app_state) {
       if (event.key.keysym.sym == SDLK_d) {
         vec3_mul(&right_vector, camera.speed * app_state->delta_time);
         camera.position = vec3_sub(camera.position, right_vector);
-        break;
-      }
-      // ROTATION controls on the keyboard
-      // YAW
-      if (event.key.keysym.sym == SDLK_RIGHT) {
-        camera.yaw += camera.mouse_sensitivity * app_state->delta_time;
-        break;
-      }
-      if (event.key.keysym.sym == SDLK_LEFT) {
-        camera.yaw -= camera.mouse_sensitivity * app_state->delta_time;
-        break;
-      }
-      // PITCH
-      if (event.key.keysym.sym == SDLK_UP) {
-        camera.pitch -= camera.mouse_sensitivity * app_state->delta_time;
-        if (camera.pitch <= -(M_PI / 2)) {
-          camera.pitch = -(M_PI / 2);
-        }
-        break;
-      }
-      if (event.key.keysym.sym == SDLK_DOWN) {
-        camera.pitch += camera.mouse_sensitivity * app_state->delta_time;
-        if (camera.pitch >= (M_PI / 2)) {
-          camera.pitch = (M_PI / 2);
-        }
         break;
       }
     }
