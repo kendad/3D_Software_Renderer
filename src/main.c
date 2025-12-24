@@ -17,7 +17,6 @@
 #include <SDL_timer.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 void setup(app_state_t *app_state);
@@ -92,7 +91,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/cube.obj", "../assets/cube.png");
+  mesh = load_mesh_obj("../assets/f22.obj", "../assets/f22.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the lights in the scene

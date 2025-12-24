@@ -3,10 +3,10 @@
 #include "vector.h"
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #define AMBIENT_STRENGTH 0.2
 #define SPECULAR_STRENGTH 1.5
+#define GAMMA_INVERSE (1.0 / 2.2)
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
@@ -86,15 +86,31 @@ uint32_t light_phong(light_t lights[], int total_lights_in_scene,
   }
 
   // extract the R G B A from the vertex color
+  // this vertex colors are in the gamma corrected space which is non linear
   uint32_t tex_color_a = (vertex_color >> 24) & 0xFF;
   uint32_t tex_color_r = (vertex_color >> 16) & 0xFF;
   uint32_t tex_color_g = (vertex_color >> 8) & 0xFF;
   uint32_t tex_color_b = (vertex_color >> 0) & 0xFF;
 
+  // bring the vertex color to the linear space
+  float tex_color_linear_r = powf((tex_color_r / 255.0), 2.2);
+  float tex_color_linear_g = powf((tex_color_g / 255.0), 2.2);
+  float tex_color_linear_b = powf((tex_color_b / 255.0), 2.2);
+
+  // combine light with the vertex colors
+  float linear_r = (tex_color_linear_r * light_total_r);
+  float linear_g = (tex_color_linear_g * light_total_g);
+  float linear_b = (tex_color_linear_b * light_total_b);
+
+  // apply gamma correction to the linear light
+  float corrected_r = powf(linear_r, GAMMA_INVERSE);
+  float corrected_g = powf(linear_g, GAMMA_INVERSE);
+  float corrected_b = powf(linear_b, GAMMA_INVERSE);
+
   // combine the light with the vertex colors for phong lighting effect
-  uint32_t final_r = (uint32_t)(tex_color_r * light_total_r);
-  uint32_t final_g = (uint32_t)(tex_color_g * light_total_g);
-  uint32_t final_b = (uint32_t)(tex_color_b * light_total_b);
+  uint32_t final_r = (uint32_t)(corrected_r * 255.0);
+  uint32_t final_g = (uint32_t)(corrected_g * 255.0);
+  uint32_t final_b = (uint32_t)(corrected_b * 255.0);
   // clamp the final colors to 255.0
   if (final_r > 255)
     final_r = 255;
