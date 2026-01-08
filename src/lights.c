@@ -20,7 +20,7 @@ void init_lights_in_scene(light_t *lights, int *number_of_lights) {
 }
 
 vec3_t light_reflect(vec3_t light_direction, vec3_t normal) {
-  // 2(l.n)n - l-->reflection vector formula
+  // [2(l.n)n - l]-->reflection vector formula
 
   // 2(l.n)
   float l_dot_n = vec3_dot(light_direction, normal);
@@ -93,9 +93,9 @@ uint32_t light_phong(light_t lights[], int total_lights_in_scene,
   uint32_t tex_color_b = (vertex_color >> 0) & 0xFF;
 
   // bring the vertex color to the linear space
-  float tex_color_linear_r = powf((tex_color_r / 255.0), 2.2);
-  float tex_color_linear_g = powf((tex_color_g / 255.0), 2.2);
-  float tex_color_linear_b = powf((tex_color_b / 255.0), 2.2);
+  float tex_color_linear_r = powf((tex_color_r), 2.2);
+  float tex_color_linear_g = powf((tex_color_g), 2.2);
+  float tex_color_linear_b = powf((tex_color_b), 2.2);
 
   // combine light with the vertex colors
   float linear_r = (tex_color_linear_r * light_total_r);
@@ -108,9 +108,9 @@ uint32_t light_phong(light_t lights[], int total_lights_in_scene,
   float corrected_b = powf(linear_b, GAMMA_INVERSE);
 
   // combine the light with the vertex colors for phong lighting effect
-  uint32_t final_r = (uint32_t)(corrected_r * 255.0);
-  uint32_t final_g = (uint32_t)(corrected_g * 255.0);
-  uint32_t final_b = (uint32_t)(corrected_b * 255.0);
+  uint32_t final_r = (uint32_t)(corrected_r);
+  uint32_t final_g = (uint32_t)(corrected_g);
+  uint32_t final_b = (uint32_t)(corrected_b);
   // clamp the final colors to 255.0
   if (final_r > 255)
     final_r = 255;
