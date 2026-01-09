@@ -12,7 +12,6 @@ void free_mesh_data(mesh_t mesh) {
   free(mesh.normals);
   free(mesh.tex_coords);
   free(mesh.faces);
-  // free(mesh.texture_data.data);
   stbi_image_free(mesh.texture_data.data);
 }
 
