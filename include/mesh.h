@@ -34,7 +34,3 @@ void mesh_apply_transform_view_projection(
     int *triangles_to_render_count, mat4_t scale_matrix, mat4_t rotation_matrix,
     mat4_t translation_matrix, mat4_t view_matrix, mat4_t projection_matrix,
     bool is_skybox);
-
-// TO_DO: optimize mesh render fucntion for different lighting systems
-void mesh_render_with_phong_lighting_model(triangle_t *triangles_to_render,
-                                           int *triangles_to_render_count);

@@ -46,8 +46,8 @@ typedef struct {
   uint32_t color;
 } face_t;
 
-void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
-                        light_t lights[], int total_lights_in_scene,
-                        vec3_t camera_position, app_state_t *app_state);
+void draw_triangle_fill_with_lighting_effect(
+    triangle_t triangle, texture_t *texture_data, light_t lights[],
+    int total_lights_in_scene, vec3_t camera_position, app_state_t *app_state);
 
 void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);

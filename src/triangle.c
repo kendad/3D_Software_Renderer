@@ -54,9 +54,9 @@ bool is_top_flat_or_left(vec2_t edge) {
   return is_top_flat || is_left;
 }
 
-void draw_triangle_fill(triangle_t triangle, texture_t *texture_data,
-                        light_t lights[], int total_lights_in_scene,
-                        vec3_t camera_position, app_state_t *app_state) {
+void draw_triangle_fill_with_lighting_effect(
+    triangle_t triangle, texture_t *texture_data, light_t lights[],
+    int total_lights_in_scene, vec3_t camera_position, app_state_t *app_state) {
   // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
