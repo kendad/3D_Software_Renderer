@@ -179,5 +179,33 @@ float visibility(vec3_t surface_normal, vec3_t view_direction,
   float two_n_dot_l_times_n_dot_v = 2.0 * n_dot_l * n_dot_v;
   float n_dot_l_sum_n_dot_v = n_dot_l + n_dot_v;
   float lerped = lerp(two_n_dot_l_times_n_dot_v, n_dot_l_sum_n_dot_v, ALPHA);
-  return 0.5 / (lerped + 0.00001);
+  return 0.5 / (lerped + 1e-7f);
+}
+
+float normal_distribution(vec3_t surface_normal, vec3_t halfway_vector) {
+  // We use the GGX normal distribution
+  //  D(h) = (APLHA^2) / PI* (1 + (n.h)^2 * ((APLHA^2)-1)) ^ 2
+
+  float n_dot_h = vec3_dot(surface_normal, halfway_vector);
+  if (n_dot_h < 0)
+    return 0.0;
+  if (n_dot_h > 1)
+    n_dot_h = 1.0;
+
+  float n_dot_h_squared = n_dot_h * n_dot_h;
+
+  float alpha_squared = ALPHA * ALPHA;
+
+  float numerator = alpha_squared;
+
+  float denominator =
+      M_PI * powf(1.0 + (n_dot_h_squared * (alpha_squared - 1.0)), 2.0);
+
+  return numerator / (denominator + 1e-7f);
+}
+
+float fresnel_specular_component(float fresnel_reflectance,
+                                 float visibility_term,
+                                 float normal_distribution) {
+  return fresnel_reflectance * visibility_term * normal_distribution;
 }
