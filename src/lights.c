@@ -7,6 +7,7 @@
 #define AMBIENT_STRENGTH 0.2
 #define SPECULAR_STRENGTH 1.5
 #define GAMMA_INVERSE (1.0 / 2.2)
+#define ALPHA 0.4 // Surface Roughness Parameter
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
@@ -124,4 +125,59 @@ uint32_t light_phong(light_t lights[], int total_lights_in_scene,
       (tex_color_a << 24) | (final_r << 16) | (final_g << 8) | final_b;
 
   return final_color;
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////// PBR
+/////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////
+
+float fresnel_reflectance(vec3_t halfway_vector, vec3_t light_direction) {
+  // We use Fresnel Reflectance using Schlicks Approximation
+  // F(n,l)=F0 + (1-F0)(1-(n.l))^(1/p)
+  // For most everyday materials we will consider F0=0.04
+  // (h.l) is clamped in the range [0,1]
+  // (1/p) = 5.0
+
+  float one_over_p = 5.0;
+
+  float F0 = 0.04;
+  float one_minus_F0 = 1.0 - F0;
+
+  float h_dot_l = vec3_dot(halfway_vector, light_direction);
+  if (h_dot_l < 0)
+    h_dot_l = 0.0;
+  if (h_dot_l > 1)
+    h_dot_l = 1.0;
+
+  float one_minus_h_dot_l = 1.0 - h_dot_l;
+
+  return F0 + (one_minus_F0 * powf(one_minus_h_dot_l, one_over_p));
+}
+
+float visibility(vec3_t surface_normal, vec3_t view_direction,
+                 vec3_t light_direction) {
+  // This is the visibity term and describes how much of the surface will
+  // interfere with light intensity[microfacet theory] We use Hammon
+  // Approximation
+  //  G2(l,v) /(4*|n.l||n.v|) Approximation is 0.5 / lerp(2|n.l||n.v| , |n.l| +
+  //  |n.v| , ALPHA)
+  //
+
+  float n_dot_l = vec3_dot(surface_normal, light_direction);
+  float n_dot_v = vec3_dot(surface_normal, view_direction);
+
+  if (n_dot_l < 0)
+    n_dot_l = 0.0;
+  if (n_dot_l > 1)
+    n_dot_l = 1.0;
+  if (n_dot_v < 0)
+    n_dot_v = 0.0;
+  if (n_dot_v > 1)
+    n_dot_v = 1.0;
+
+  float two_n_dot_l_times_n_dot_v = 2.0 * n_dot_l * n_dot_v;
+  float n_dot_l_sum_n_dot_v = n_dot_l + n_dot_v;
+  float lerped = lerp(two_n_dot_l_times_n_dot_v, n_dot_l_sum_n_dot_v, ALPHA);
+  return 0.5 / (lerped + 0.00001);
 }
