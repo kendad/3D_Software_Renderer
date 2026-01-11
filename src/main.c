@@ -242,7 +242,7 @@ void render(app_state_t *app_state) {
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
         triangles_to_render[i], &mesh.texture_data, view_space_lights,
-        total_lights_in_scene, camera_position_at_view_space, app_state);
+        total_lights_in_scene, camera_position_at_view_space, false, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
 
@@ -253,7 +253,7 @@ void render(app_state_t *app_state) {
   for (int i = 0; i < triangles_to_render_in_skybox_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
         triangles_to_render_in_skybox[i], &skybox.texture_data,
-        view_space_lights, 0, camera_position_at_view_space, app_state);
+        view_space_lights, 0, camera_position_at_view_space, true, app_state);
     // draw_triangle_wireframe(triangles_in_skybox_to_render[i], app_state);
   }
   /////////////////////////////////////////

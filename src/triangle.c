@@ -56,7 +56,8 @@ bool is_top_flat_or_left(vec2_t edge) {
 
 void draw_triangle_fill_with_lighting_effect(
     triangle_t triangle, texture_t *texture_data, light_t lights[],
-    int total_lights_in_scene, vec3_t camera_position, app_state_t *app_state) {
+    int total_lights_in_scene, vec3_t camera_position, bool is_pbr,
+    app_state_t *app_state) {
   // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
@@ -197,10 +198,17 @@ void draw_triangle_fill_with_lighting_effect(
             .x = normal_x, .y = normal_y, .z = normal_z};
         vec3_normalize(&interpolated_normal);
 
-        // get the phong lighting effect on the iterpolated color
-        interpolated_color = light_phong(
-            lights, total_lights_in_scene, interpolated_position,
-            camera_position, interpolated_normal, interpolated_color);
+        // get the lighting effect on the interpolated color value of the
+        // interpolated pixel in case we have light
+        if (!is_pbr) {
+          interpolated_color = light_pbr(
+              lights, total_lights_in_scene, interpolated_position,
+              camera_position, interpolated_normal, interpolated_color);
+        } else {
+          interpolated_color = light_phong(
+              lights, total_lights_in_scene, interpolated_position,
+              camera_position, interpolated_normal, interpolated_color);
+        }
 
         // Check and update the z_buffer
         if (interpolated_z > app_state->z_buffer[x + (WINDOW_WIDTH * y)]) {
