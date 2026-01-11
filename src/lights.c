@@ -8,7 +8,7 @@
 #define PBR_AMBIENT_STRENGTH 0.02
 #define SPECULAR_STRENGTH 1.5
 #define GAMMA_INVERSE (1.0 / 2.2)
-#define ALPHA 0.4 // Surface Roughness Parameter value for most everyday objects
+#define ALPHA 0.1 // Surface Roughness Parameter value for shiny metal objects
 #define Li 1.0    // TODO: Moodify such that Li comes from Image based lighting
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
