@@ -4,6 +4,7 @@
 #include "vector.h"
 #include <math.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define AMBIENT_STRENGTH 0.5
 #define PBR_AMBIENT_STRENGTH 0.02
@@ -220,6 +221,110 @@ float fresnel_specular_component(float fresnel_term, vec3_t surface_normal,
 
 float fresnel_diffuse_component(float fresnel_term) { return 1 - fresnel_term; }
 
+// Find the UV coordinates from a skybox/cubemap based on the surface normal
+// direction
+vec2_t uv_from_surface_normal(vec3_t surface_normal, texture_t *texture_data) {
+  vec2_t current_face = {0, 0};
+  vec2_t final_uv = {0, 0};
+
+  // Get the absoulte values of the surface normal
+  float absX = fabsf(surface_normal.x);
+  float absY = fabsf(surface_normal.y);
+  float absZ = fabsf(surface_normal.z);
+
+  // Determine which absoulte value from X Y Z is largest
+  // the largest value will point towards the skybox face that the
+  // surface_normal is pointing towards
+  // For ex: if absZ is largest and surface_normal.z is +ve then surface_normal
+  // is facing the front
+  if (absX >= absY && absX >= absZ) {
+    // then surface normal is pointing in either LEFT/RIGHT
+
+    // project into the current face which will give us a value between [-1,1]
+    final_uv.x = surface_normal.y / absX;
+    final_uv.y = surface_normal.z / absX;
+
+    // also determine the current face
+    if (surface_normal.x < 0) {
+      // then we are facing the LEFT side
+      current_face.x = 0;
+      current_face.y = 1;
+      // change the signs to match the current face coordinate space
+      final_uv.x *= 1.0;
+      final_uv.y *= -1.0;
+    } else if (surface_normal.x >= 0) {
+      // then we are facing the RIGHT side
+      current_face.x = 2;
+      current_face.y = 1;
+      // change the signs to match the current face coordinate space
+      final_uv.x *= -1.0;
+      final_uv.y *= -1.0;
+    }
+  } else if (absY >= absX && absY >= absZ) {
+    // then surface normal is pointing in either TOP/BOTTOM
+
+    // project into the current face which will give us a value between [-1,1]
+    final_uv.x = surface_normal.x / absY;
+    final_uv.y = surface_normal.z / absY;
+
+    // also determine the current face
+    if (surface_normal.y < 0) {
+      // then we are facing the BOTTOM side
+      current_face.x = 1;
+      current_face.y = 0;
+      // change the signs to match the current face coordinate space
+      final_uv.x *= 1.0;
+      final_uv.y *= -1.0;
+    } else if (surface_normal.y >= 0) {
+      // then we are facing the TOP side
+      current_face.x = 1;
+      current_face.y = 2;
+      // change the signs to match the current face coordinate space
+      final_uv.x *= 1.0;
+      final_uv.y *= 1.0;
+    }
+  } else {
+    // then surface normal is pointing in either FRONT/BACK
+
+    // project into the current face which will give us a value between [-1,1]
+    final_uv.x = surface_normal.x / absZ;
+    final_uv.y = surface_normal.y / absZ;
+
+    // also determine the current face
+    if (surface_normal.z < 0) {
+      // then we are facing the BACK side
+      current_face.x = 3;
+      current_face.y = 1;
+      // change the signs to match the current face coordinate space
+      final_uv.x *= -1.0;
+      final_uv.y *= -1.0;
+    } else if (surface_normal.z >= 0) {
+      // then we are facing the FRONT side
+      current_face.x = 1;
+      current_face.y = 1;
+      // change the signs to match the current face coordinate space
+      final_uv.x *= 1.0;
+      final_uv.y *= -1.0;
+    }
+  }
+
+  // convert the UV from [-1,1] to [0,1] range
+  final_uv.x = (final_uv.x + 1.0) / 2.0;
+  final_uv.y = (final_uv.y + 1.0) / 2.0;
+
+  // shift UV to the correct face
+  // add to the UV's X&Y the currect face column and row values and divide by
+  // 4 and 3 respectively as the cubemap is divided into 4Columns and 3Rows
+  final_uv.x = (final_uv.x + current_face.x) / 4.0;
+  final_uv.y = (final_uv.y + current_face.y) / 3.0;
+
+  // finally bring this texture into the texture width and height range
+  final_uv.x = (int)(final_uv.x * texture_data->width) % texture_data->width;
+  final_uv.y = (int)(final_uv.y * texture_data->height) % texture_data->height;
+
+  return final_uv;
+}
+
 uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
                    vec3_t vertex_position, vec3_t camera_position,
                    vec3_t surface_normal, uint32_t vertex_color,
@@ -227,6 +332,11 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float final_r = 0.0;
   float final_g = 0.0;
   float final_b = 0.0;
+
+  vec2_t uv = uv_from_surface_normal(surface_normal, irradiance_texture_data);
+  vertex_color =
+      irradiance_texture_data
+          ->data[abs((int)(uv.x + (uv.y * irradiance_texture_data->width)))];
 
   // extract the R G B A from the vertex color
   // this vertex colors are in the gamma corrected space which is non linear
