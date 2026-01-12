@@ -4,6 +4,7 @@
 #include "vector.h"
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define AMBIENT_STRENGTH 0.5
@@ -268,14 +269,14 @@ vec2_t uv_from_surface_normal(vec3_t surface_normal, texture_t *texture_data) {
     final_uv.y = surface_normal.z / absY;
 
     // also determine the current face
-    if (surface_normal.y < 0) {
+    if (surface_normal.y >= 0) {
       // then we are facing the BOTTOM side
       current_face.x = 1;
       current_face.y = 0;
       // change the signs to match the current face coordinate space
       final_uv.x *= 1.0;
       final_uv.y *= -1.0;
-    } else if (surface_normal.y >= 0) {
+    } else if (surface_normal.y < 0) {
       // then we are facing the TOP side
       current_face.x = 1;
       current_face.y = 2;
@@ -334,9 +335,19 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float final_b = 0.0;
 
   vec2_t uv = uv_from_surface_normal(surface_normal, irradiance_texture_data);
-  vertex_color =
+  uint32_t irradiance =
       irradiance_texture_data
-          ->data[abs((int)(uv.x + (uv.y * irradiance_texture_data->width)))];
+          ->data[(int)(uv.x + (uv.y * irradiance_texture_data->width))];
+  // convert the irradiance to its appropriate seperate channels in the [0,1]
+  // range
+  float irradiance_r = ((irradiance >> 16) & 0xFF) / 255.0;
+  float irradiance_g = ((irradiance >> 8) & 0xFF) / 255.0;
+  float irradiance_b = ((irradiance >> 0) & 0xFF) / 255.0;
+
+  // Bring the irradiance values from gamma corrected space to linear space
+  irradiance_r = powf(irradiance_r, 2.2);
+  irradiance_g = powf(irradiance_g, 2.2);
+  irradiance_b = powf(irradiance_b, 2.2);
 
   // extract the R G B A from the vertex color
   // this vertex colors are in the gamma corrected space which is non linear
@@ -349,6 +360,15 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float tex_color_linear_r = powf((tex_color_r / 255.0), 2.2);
   float tex_color_linear_g = powf((tex_color_g / 255.0), 2.2);
   float tex_color_linear_b = powf((tex_color_b / 255.0), 2.2);
+
+  // a view direction vector that points from the surface to the camera
+  vec3_t view_direction = vec3_sub(camera_position, vertex_position);
+  vec3_normalize(&view_direction);
+
+  // Also calculate the Fersnel Terms for the view and the surface normal
+  // direction
+  float specular_ambient = fresnel_reflectance(view_direction, surface_normal);
+  float diffuse_ambient = 1.0 - specular_ambient;
 
   // loop through all the lights in the scene and accumulate them in the
   // variables light_total_r/g/b
@@ -364,10 +384,6 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
     // a light_direction vector pointing from the surface to the light
     vec3_t light_direction = vec3_sub(light.position, vertex_position);
     vec3_normalize(&light_direction);
-
-    // a view direction vector that points from the surface to the camera
-    vec3_t view_direction = vec3_sub(camera_position, vertex_position);
-    vec3_normalize(&view_direction);
 
     // a halfway_vector that lies smack in between the view_direction and
     // light_direction
@@ -414,9 +430,9 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   }
 
   // Add ambient strength
-  final_r += (tex_color_linear_r * PBR_AMBIENT_STRENGTH);
-  final_g += (tex_color_linear_g * PBR_AMBIENT_STRENGTH);
-  final_b += (tex_color_linear_b * PBR_AMBIENT_STRENGTH);
+  final_r += (tex_color_linear_r * irradiance_r * diffuse_ambient);
+  final_g += (tex_color_linear_g * irradiance_g * diffuse_ambient);
+  final_b += (tex_color_linear_b * irradiance_b * diffuse_ambient);
 
   // apply gamma correction back again to the linear light
   final_r = powf(final_r, GAMMA_INVERSE);

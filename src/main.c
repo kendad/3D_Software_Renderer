@@ -183,9 +183,9 @@ void update(app_state_t *app_state) {
   mat4_t rotation_matrix_Y = mat4_make_rotation_y(rotation_Y);
   mat4_t rotation_matrix_Z = mat4_make_rotation_z(rotation_Y);
   mat4_t rotation_matrix = mat4_make_identity();
-  rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Z);
+  // rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Z);
   rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Y);
-  rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_X);
+  // rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_X);
 
   mat4_t rotation_matrix_for_camera = mat4_make_identity();
 
@@ -246,9 +246,9 @@ void render(app_state_t *app_state) {
   ////////////////////////////////////////////////////////////
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
-        triangles_to_render[i], &mesh.texture_data, &skybox.texture_data,
-        view_space_lights, total_lights_in_scene, camera_position_at_view_space,
-        true, app_state);
+        triangles_to_render[i], &mesh.texture_data,
+        &irradiance_cubemap_mesh.texture_data, view_space_lights,
+        total_lights_in_scene, camera_position_at_view_space, true, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
 
