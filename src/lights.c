@@ -12,7 +12,6 @@
 #define SPECULAR_STRENGTH 1.5
 #define GAMMA_INVERSE (1.0 / 2.2)
 #define ALPHA 0.1 // Surface Roughness Parameter value for shiny metal objects
-#define Li 1.0    // TODO: Moodify such that Li comes from Image based lighting
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
@@ -390,15 +389,20 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
     vec3_t halfway_vector = vec3_add(light_direction, view_direction);
     vec3_normalize(&halfway_vector);
 
-    // we will use the lighting equation
-    // Lo(v)=sum_across_all_lights_in_scene(f(l,v)*Li*(n.l))
-    // where
-    // The BRDF term is
-    // f(l,v) = (f_spec * light_color) + (f_diffuse * (albedo/PI))
-    // The Incoming Light
-    // Li = FOR NOW its a constant value
-    // The cosine term
-    // (n.l)
+    // The final pixel color is going to be
+    // final_color = direct_lighting + indirect_lighting
+
+    // For the Direct lighting
+    //  we will use the lighting equation
+    //  Lo(v)=sum_across_all_lights_in_scene(f(l,v)*Li*(n.l))
+    //  where
+    //  The BRDF term is
+    //  f(l,v) = (f_spec * light_color) + (f_diffuse * (albedo/PI))
+    //  The Incoming Light
+    //  Li is the attenuation factor give by 1/distance_of_pixel_from_light^2
+    //  which tells us the strength of light with regards to the distance from
+    //  the light source as it will fall off as the distance increases
+    //  The cosine term (n.l)
 
     //////////////////// BRDF Term ///////////////////////////////
     // The Fresnel Term
@@ -424,15 +428,26 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
     float n_dot_l = vec3_dot(surface_normal, light_direction);
     if (n_dot_l <= 0)
       continue;
+
+    // calculate the attenuation factor Li
+    float distance_of_vertex_from_light_source =
+        vec3_magnitude(vec3_sub(vertex_position, light.position));
+    float Li = 1.0 / ((distance_of_vertex_from_light_source *
+                       distance_of_vertex_from_light_source) +
+                      1e-7);
+
     final_r += (specular_r + diffuse_r) * Li * n_dot_l;
     final_g += (specular_g + diffuse_g) * Li * n_dot_l;
     final_b += (specular_b + diffuse_b) * Li * n_dot_l;
   }
 
-  // Add ambient strength
-  final_r += (tex_color_linear_r * irradiance_r * diffuse_ambient);
-  final_g += (tex_color_linear_g * irradiance_g * diffuse_ambient);
-  final_b += (tex_color_linear_b * irradiance_b * diffuse_ambient);
+  // For indirect_lighting which we can also say is the ambient part fo the
+  // light indirect_lighting = diffuse_component + specular_component
+  // diffuse_component =
+  // (1-fresnel_reflectance(surface_normal,view_direction))*albedo*irradiance_from_the_map
+  final_r += (diffuse_ambient * tex_color_linear_r * irradiance_r);
+  final_g += (diffuse_ambient * tex_color_linear_g * irradiance_g);
+  final_b += (diffuse_ambient * tex_color_linear_b * irradiance_b);
 
   // apply gamma correction back again to the linear light
   final_r = powf(final_r, GAMMA_INVERSE);
