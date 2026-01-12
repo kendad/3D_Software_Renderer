@@ -1,4 +1,5 @@
 #include "lights.h"
+#include "texture.h"
 #include "utilities.h"
 #include "vector.h"
 #include <math.h>
@@ -221,7 +222,8 @@ float fresnel_diffuse_component(float fresnel_term) { return 1 - fresnel_term; }
 
 uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
                    vec3_t vertex_position, vec3_t camera_position,
-                   vec3_t surface_normal, uint32_t vertex_color) {
+                   vec3_t surface_normal, uint32_t vertex_color,
+                   texture_t *irradiance_texture_data) {
   float final_r = 0.0;
   float final_g = 0.0;
   float final_b = 0.0;
@@ -311,7 +313,7 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   final_g = powf(final_g, GAMMA_INVERSE);
   final_b = powf(final_b, GAMMA_INVERSE);
 
-  // convert to uint32_t
+  // convert to uint32_t and bring it from range [0,1] to [0,255]
   uint32_t r = (uint32_t)(final_r * 255.0);
   uint32_t g = (uint32_t)(final_g * 255.0);
   uint32_t b = (uint32_t)(final_b * 255.0);

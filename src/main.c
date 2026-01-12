@@ -72,6 +72,8 @@ int triangles_to_render_count = 0;
 mesh_t skybox;
 triangle_t *triangles_to_render_in_skybox;
 int triangles_to_render_in_skybox_count = 0;
+// Irradiance Cubemap Mesh
+mesh_t irradiance_cubemap_mesh;
 // Lights
 light_t lights[MAX_NUMBER_OF_LIGHTS];
 light_t view_space_lights[MAX_NUMBER_OF_LIGHTS];
@@ -103,10 +105,13 @@ void setup(app_state_t *app_state) {
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the skybox
-  skybox = load_mesh_obj("../assets/indoor_cubemap.obj",
-                         "../assets/indoor_cubemap.png");
+  skybox = load_mesh_obj("../assets/skybox.obj", "../assets/club_cubemap.png");
   triangles_to_render_in_skybox =
       malloc(sizeof(triangle_t) * skybox.number_of_faces);
+
+  // Load the Irradiance Map
+  irradiance_cubemap_mesh =
+      load_mesh_obj("../assets/skybox.obj", "../assets/irradiance_cubemap.png");
 
   // load the lights in the scene
   init_lights_in_scene(lights, &total_lights_in_scene);
@@ -241,7 +246,8 @@ void render(app_state_t *app_state) {
   ////////////////////////////////////////////////////////////
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
-        triangles_to_render[i], &mesh.texture_data, view_space_lights,
+        triangles_to_render[i], &mesh.texture_data,
+        &irradiance_cubemap_mesh.texture_data, view_space_lights,
         total_lights_in_scene, camera_position_at_view_space, true, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
@@ -253,7 +259,8 @@ void render(app_state_t *app_state) {
   for (int i = 0; i < triangles_to_render_in_skybox_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
         triangles_to_render_in_skybox[i], &skybox.texture_data,
-        view_space_lights, 0, camera_position_at_view_space, false, app_state);
+        &skybox.texture_data, view_space_lights, 0,
+        camera_position_at_view_space, false, app_state);
     // draw_triangle_wireframe(triangles_in_skybox_to_render[i], app_state);
   }
   /////////////////////////////////////////
@@ -267,5 +274,6 @@ void cleanup(app_state_t *app_state) {
   free(triangles_to_render_in_skybox);
   free_mesh_data(mesh);
   free_mesh_data(skybox);
+  free_mesh_data(irradiance_cubemap_mesh);
   display_cleanup(app_state);
 }
