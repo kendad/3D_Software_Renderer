@@ -11,7 +11,7 @@
 #define GAMMA_INVERSE (1.0 / 2.2)
 #define F0 0.04   // for most  general dieletrics F0 is 0.04
 #define ALPHA 0.0 // Surface Roughness Parameter value for shiny metal objects
-#define IS_METAL 1.0
+#define IS_METAL 0.0 // can have values 0[non metal] and 1[metal]
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)

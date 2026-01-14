@@ -201,9 +201,9 @@ void update(app_state_t *app_state) {
   mat4_t rotation_matrix_Y = mat4_make_rotation_y(rotation_Y);
   mat4_t rotation_matrix_Z = mat4_make_rotation_z(rotation_Y);
   mat4_t rotation_matrix = mat4_make_identity();
-  // rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Z);
+  rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Z);
   rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Y);
-  // rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_X);
+  rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_X);
 
   mat4_t rotation_matrix_for_camera = mat4_make_identity();
 
