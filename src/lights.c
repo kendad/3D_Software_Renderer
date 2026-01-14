@@ -4,14 +4,14 @@
 #include "vector.h"
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #define AMBIENT_STRENGTH 0.5
 #define PBR_AMBIENT_STRENGTH 0.02
 #define SPECULAR_STRENGTH 1.5
 #define GAMMA_INVERSE (1.0 / 2.2)
+#define F0 0.04   // for most  general dieletrics F0 is 0.04
 #define ALPHA 0.0 // Surface Roughness Parameter value for shiny metal objects
+#define IS_METAL 1.0
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
@@ -144,7 +144,6 @@ float fresnel_reflectance(vec3_t halfway_vector, vec3_t light_direction) {
 
   float one_over_p = 5.0;
 
-  float F0 = 0.04;
   float one_minus_F0 = 1.0 - F0;
 
   float h_dot_l = vec3_dot(halfway_vector, light_direction);
@@ -336,6 +335,18 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float final_g = 0.0;
   float final_b = 0.0;
 
+  // extract the R G B A from the vertex color
+  // this vertex colors are in the gamma corrected space which is non linear
+  uint32_t tex_color_a = (vertex_color >> 24) & 0xFF;
+  uint32_t tex_color_r = (vertex_color >> 16) & 0xFF;
+  uint32_t tex_color_g = (vertex_color >> 8) & 0xFF;
+  uint32_t tex_color_b = (vertex_color >> 0) & 0xFF;
+
+  // bring the vertex color to the linear space for any further calculations
+  float tex_color_linear_r = powf((tex_color_r / 255.0), 2.2);
+  float tex_color_linear_g = powf((tex_color_g / 255.0), 2.2);
+  float tex_color_linear_b = powf((tex_color_b / 255.0), 2.2);
+
   // a view direction vector that points from the surface to the camera
   vec3_t view_direction = vec3_sub(camera_position, vertex_position);
   vec3_normalize(&view_direction);
@@ -343,7 +354,12 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   // Also calculate the Fersnel Terms for the view and the surface normal
   // direction
   float specular_ambient = fresnel_reflectance(view_direction, surface_normal);
-  float diffuse_ambient = 1.0 - specular_ambient;
+  float diffuse_ambient = (1.0 - specular_ambient) * (1.0 - IS_METAL);
+  // F0 is the albedo when its a metal and 0.04[or some other value] when its
+  // not determines the color of the Reflectance
+  float f0_r = lerp(F0, tex_color_linear_r, IS_METAL);
+  float f0_g = lerp(F0, tex_color_linear_g, IS_METAL);
+  float f0_b = lerp(F0, tex_color_linear_b, IS_METAL);
 
   /////////////////// RADIANCE //////////////////////////////////////////////
 
@@ -388,7 +404,7 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float scale = ((LUT_value >> 16) & 0xFF) / 255.0;
   float bias = ((LUT_value >> 8) & 0xFF) / 255.0;
 
-  // XXXXXXXXXXXXXXXX IRRADIANCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX//
+  // XXXXXXXXXXXXXXXX RADIANCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX//
 
   /////////////////// IRRADIANCE //////////////////////////////////////////////
 
@@ -411,18 +427,6 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   irradiance_g = powf(irradiance_g, 2.2);
   irradiance_b = powf(irradiance_b, 2.2);
   // XXXXXXXXXXXXXXXX IRRADIANCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX//
-
-  // extract the R G B A from the vertex color
-  // this vertex colors are in the gamma corrected space which is non linear
-  uint32_t tex_color_a = (vertex_color >> 24) & 0xFF;
-  uint32_t tex_color_r = (vertex_color >> 16) & 0xFF;
-  uint32_t tex_color_g = (vertex_color >> 8) & 0xFF;
-  uint32_t tex_color_b = (vertex_color >> 0) & 0xFF;
-
-  // bring the vertex color to the linear space for any further calculations
-  float tex_color_linear_r = powf((tex_color_r / 255.0), 2.2);
-  float tex_color_linear_g = powf((tex_color_g / 255.0), 2.2);
-  float tex_color_linear_b = powf((tex_color_b / 255.0), 2.2);
 
   // loop through all the lights in the scene and accumulate them in the
   // variables light_total_r/g/b
@@ -506,9 +510,9 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   final_b += (diffuse_ambient * tex_color_linear_b * irradiance_b);
   // specular_component = radiance_from_the map *
   // ((fresnel_reflectance(surface_normal,view_direction) * Scale) + Bias)
-  final_r += radiance_r * ((specular_ambient * scale) + bias);
-  final_g += radiance_g * ((specular_ambient * scale) + bias);
-  final_b += radiance_b * ((specular_ambient * scale) + bias);
+  final_r += radiance_r * ((f0_r * scale) + bias);
+  final_g += radiance_g * ((f0_g * scale) + bias);
+  final_b += radiance_b * ((f0_b * scale) + bias);
 
   // apply gamma correction back again to the linear light
   final_r = powf(final_r, GAMMA_INVERSE);
