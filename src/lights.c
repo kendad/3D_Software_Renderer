@@ -335,10 +335,49 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float final_g = 0.0;
   float final_b = 0.0;
 
-  vec2_t uv = uv_from_surface_normal(surface_normal, irradiance_texture_data);
+  // a view direction vector that points from the surface to the camera
+  vec3_t view_direction = vec3_sub(camera_position, vertex_position);
+  vec3_normalize(&view_direction);
+
+  // Also calculate the Fersnel Terms for the view and the surface normal
+  // direction
+  float specular_ambient = fresnel_reflectance(view_direction, surface_normal);
+  float diffuse_ambient = 1.0 - specular_ambient;
+
+  /////////////////// RADIANCE //////////////////////////////////////////////
+
+  // the reflected view vector
+  vec3_t reflected_view_vector = light_reflect(view_direction, surface_normal);
+
+  // Get the UV for the radiance cubemap
+  vec2_t uv_radiance =
+      uv_from_surface_normal(reflected_view_vector, radiance_texture_data);
+  //  Get the irradiance value from the irradiance texture cubemap
+  uint32_t radiance = radiance_texture_data->data[(
+      int)(uv_radiance.x + (uv_radiance.y * radiance_texture_data->width))];
+  // convert the irradiance to its appropriate seperate channels in the [0,1]
+  // range
+  float radiance_r = ((radiance >> 16) & 0xFF) / 255.0;
+  float radiance_g = ((radiance >> 8) & 0xFF) / 255.0;
+  float radiance_b = ((radiance >> 0) & 0xFF) / 255.0;
+
+  // Bring the irradiance values from gamma corrected space to linear space
+  radiance_r = powf(radiance_r, 2.2);
+  radiance_g = powf(radiance_g, 2.2);
+  radiance_b = powf(radiance_b, 2.2);
+
+  // XXXXXXXXXXXXXXXX IRRADIANCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX//
+
+  /////////////////// IRRADIANCE //////////////////////////////////////////////
+
+  // Get the UV for the irradiance cubemap
+  vec2_t uv_irradiance =
+      uv_from_surface_normal(surface_normal, irradiance_texture_data);
+  //  Get the irradiance value from the irradiance texture cubemap
   uint32_t irradiance =
       irradiance_texture_data
-          ->data[(int)(uv.x + (uv.y * irradiance_texture_data->width))];
+          ->data[(int)(uv_irradiance.x +
+                       (uv_irradiance.y * irradiance_texture_data->width))];
   // convert the irradiance to its appropriate seperate channels in the [0,1]
   // range
   float irradiance_r = ((irradiance >> 16) & 0xFF) / 255.0;
@@ -349,6 +388,7 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   irradiance_r = powf(irradiance_r, 2.2);
   irradiance_g = powf(irradiance_g, 2.2);
   irradiance_b = powf(irradiance_b, 2.2);
+  // XXXXXXXXXXXXXXXX IRRADIANCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX//
 
   // extract the R G B A from the vertex color
   // this vertex colors are in the gamma corrected space which is non linear
@@ -361,15 +401,6 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   float tex_color_linear_r = powf((tex_color_r / 255.0), 2.2);
   float tex_color_linear_g = powf((tex_color_g / 255.0), 2.2);
   float tex_color_linear_b = powf((tex_color_b / 255.0), 2.2);
-
-  // a view direction vector that points from the surface to the camera
-  vec3_t view_direction = vec3_sub(camera_position, vertex_position);
-  vec3_normalize(&view_direction);
-
-  // Also calculate the Fersnel Terms for the view and the surface normal
-  // direction
-  float specular_ambient = fresnel_reflectance(view_direction, surface_normal);
-  float diffuse_ambient = 1.0 - specular_ambient;
 
   // loop through all the lights in the scene and accumulate them in the
   // variables light_total_r/g/b
