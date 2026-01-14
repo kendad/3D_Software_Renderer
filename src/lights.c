@@ -11,7 +11,7 @@
 #define PBR_AMBIENT_STRENGTH 0.02
 #define SPECULAR_STRENGTH 1.5
 #define GAMMA_INVERSE (1.0 / 2.2)
-#define ALPHA 0.1 // Surface Roughness Parameter value for shiny metal objects
+#define ALPHA 0.0 // Surface Roughness Parameter value for shiny metal objects
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
@@ -268,6 +268,7 @@ vec2_t uv_from_surface_normal(vec3_t surface_normal, texture_t *texture_data) {
     final_uv.y = surface_normal.z / absY;
 
     // also determine the current face
+    // this is inverted as our textures are usually inverted
     if (surface_normal.y >= 0) {
       // then we are facing the BOTTOM side
       current_face.x = 1;
@@ -365,6 +366,27 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   radiance_r = powf(radiance_r, 2.2);
   radiance_g = powf(radiance_g, 2.2);
   radiance_b = powf(radiance_b, 2.2);
+
+  // Calculate the LUT U_V coordinates
+  // in space [0,1]
+  float n_dot_v = vec3_dot(surface_normal, view_direction);
+  if (n_dot_v < 0)
+    n_dot_v = 0.0;
+  if (n_dot_v > 1)
+    n_dot_v = 1.0;
+
+  // The U coordinate stores the scale values based on n_dot_v
+  // converted to [0.texture_width]
+  int LUT_u = (int)(n_dot_v * (LUT_texture_data->width - 1));
+  // The V coordinate stores the bias values based on Roughness
+  int LUT_v = (int)((1.0 - ALPHA) * (LUT_texture_data->height - 1));
+
+  uint32_t LUT_value =
+      LUT_texture_data->data[LUT_u + (LUT_v * LUT_texture_data->width)];
+
+  // Extract the scale(Red_channel) and bias(Green_channel) in the range[0,1]
+  float scale = ((LUT_value >> 16) & 0xFF) / 255.0;
+  float bias = ((LUT_value >> 8) & 0xFF) / 255.0;
 
   // XXXXXXXXXXXXXXXX IRRADIANCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX//
 
@@ -477,10 +499,16 @@ uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
   // For indirect_lighting which we can also say is the ambient part fo the
   // light indirect_lighting = diffuse_component + specular_component
   // diffuse_component =
-  // (1-fresnel_reflectance(surface_normal,view_direction))*albedo*irradiance_from_the_map
+  // (1-fresnel_reflectance(surface_normal,view_direction)) * albedo *
+  // irradiance_from_the_map
   final_r += (diffuse_ambient * tex_color_linear_r * irradiance_r);
   final_g += (diffuse_ambient * tex_color_linear_g * irradiance_g);
   final_b += (diffuse_ambient * tex_color_linear_b * irradiance_b);
+  // specular_component = radiance_from_the map *
+  // ((fresnel_reflectance(surface_normal,view_direction) * Scale) + Bias)
+  final_r += radiance_r * ((specular_ambient * scale) + bias);
+  final_g += radiance_g * ((specular_ambient * scale) + bias);
+  final_b += radiance_b * ((specular_ambient * scale) + bias);
 
   // apply gamma correction back again to the linear light
   final_r = powf(final_r, GAMMA_INVERSE);
