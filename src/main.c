@@ -111,7 +111,8 @@ void setup(app_state_t *app_state) {
 
   // Load the Irradiance Map
   irradiance_cubemap_mesh =
-      load_mesh_obj("../assets/skybox.obj", "../assets/irradiance_cubemap.png");
+      load_mesh_obj("../assets/skybox.obj",
+                    "../assets/IBL/club_ir/club_irradiance_cubemap.png");
 
   // load the lights in the scene
   init_lights_in_scene(lights, &total_lights_in_scene);
