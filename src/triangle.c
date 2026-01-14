@@ -56,9 +56,9 @@ bool is_top_flat_or_left(vec2_t edge) {
 
 void draw_triangle_fill_with_lighting_effect(
     triangle_t triangle, texture_t *texture_data,
-    texture_t *irradiance_texture_data, light_t lights[],
-    int total_lights_in_scene, vec3_t camera_position, bool is_pbr,
-    app_state_t *app_state) {
+    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
+    texture_t *LUT_texture_data, light_t lights[], int total_lights_in_scene,
+    vec3_t camera_position, bool is_pbr, app_state_t *app_state) {
   // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
@@ -202,10 +202,10 @@ void draw_triangle_fill_with_lighting_effect(
         // get the lighting effect on the interpolated color value of the
         // interpolated pixel in case we have light
         if (is_pbr) {
-          interpolated_color =
-              light_pbr(lights, total_lights_in_scene, interpolated_position,
-                        camera_position, interpolated_normal,
-                        interpolated_color, irradiance_texture_data);
+          interpolated_color = light_pbr(
+              lights, total_lights_in_scene, interpolated_position,
+              camera_position, interpolated_normal, interpolated_color,
+              radiance_texture_data, irradiance_texture_data, LUT_texture_data);
         } else {
           interpolated_color = light_phong(
               lights, total_lights_in_scene, interpolated_position,

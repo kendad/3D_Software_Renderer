@@ -21,4 +21,6 @@ uint32_t light_phong(light_t lights[], int total_lights_in_scene,
 uint32_t light_pbr(light_t lights[], int total_lights_in_scene,
                    vec3_t vertex_position, vec3_t camera_position,
                    vec3_t surface_normal, uint32_t vertex_color,
-                   texture_t *irradiance_texture_data);
+                   texture_t *radiance_texture_data,
+                   texture_t *irradiance_texture_data,
+                   texture_t *LUT_texture_data);

@@ -49,8 +49,8 @@ typedef struct {
 
 void draw_triangle_fill_with_lighting_effect(
     triangle_t triangle, texture_t *texture_data,
-    texture_t *irradiance_texture_data, light_t lights[],
-    int total_lights_in_scene, vec3_t camera_position, bool is_pbr,
-    app_state_t *app_state);
+    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
+    texture_t *LUT_texture_data, light_t lights[], int total_lights_in_scene,
+    vec3_t camera_position, bool is_pbr, app_state_t *app_state);
 
 void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);

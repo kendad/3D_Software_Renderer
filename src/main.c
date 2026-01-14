@@ -6,6 +6,7 @@
 #include "lights.h"
 #include "matrix.h"
 #include "mesh.h"
+#include "texture.h"
 #include "triangle.h"
 #include "utilities.h"
 #include "vector.h"
@@ -72,8 +73,12 @@ int triangles_to_render_count = 0;
 mesh_t skybox;
 triangle_t *triangles_to_render_in_skybox;
 int triangles_to_render_in_skybox_count = 0;
+// Radiance Cubemap Mesh
+mesh_t radiance_cubemap_mesh;
 // Irradiance Cubemap Mesh
 mesh_t irradiance_cubemap_mesh;
+// LUT texture data
+texture_t LUT_texture_data;
 // Lights
 light_t lights[MAX_NUMBER_OF_LIGHTS];
 light_t view_space_lights[MAX_NUMBER_OF_LIGHTS];
@@ -108,6 +113,18 @@ void setup(app_state_t *app_state) {
   skybox = load_mesh_obj("../assets/skybox.obj", "../assets/club_cubemap.png");
   triangles_to_render_in_skybox =
       malloc(sizeof(triangle_t) * skybox.number_of_faces);
+
+  // Load the LUT texture data
+  LUT_texture_data = load_texture_data("../assets/IBL/club_r/LUT.png");
+
+  // Load the Radiance Map
+  // Load it based on the roughness level
+  // extremely metal  then rougness level is 0
+  // and the other way around will be a blurred at level[what ever max level you
+  // have]
+  radiance_cubemap_mesh =
+      load_mesh_obj("../assets/skybox.obj",
+                    "../assets/IBL/club_r/club_radiance_map_level_0.png");
 
   // Load the Irradiance Map
   irradiance_cubemap_mesh =
@@ -248,8 +265,10 @@ void render(app_state_t *app_state) {
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
         triangles_to_render[i], &mesh.texture_data,
-        &irradiance_cubemap_mesh.texture_data, view_space_lights,
-        total_lights_in_scene, camera_position_at_view_space, true, app_state);
+        &radiance_cubemap_mesh.texture_data,
+        &irradiance_cubemap_mesh.texture_data, &LUT_texture_data,
+        view_space_lights, total_lights_in_scene, camera_position_at_view_space,
+        true, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
 
@@ -259,9 +278,9 @@ void render(app_state_t *app_state) {
 
   for (int i = 0; i < triangles_to_render_in_skybox_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
-        triangles_to_render_in_skybox[i], &skybox.texture_data,
-        &skybox.texture_data, view_space_lights, 0,
-        camera_position_at_view_space, false, app_state);
+        triangles_to_render_in_skybox[i], &skybox.texture_data, NULL, NULL,
+        NULL, view_space_lights, 0, camera_position_at_view_space, false,
+        app_state);
     // draw_triangle_wireframe(triangles_in_skybox_to_render[i], app_state);
   }
   /////////////////////////////////////////
