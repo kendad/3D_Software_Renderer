@@ -8,7 +8,6 @@
 #include "vector.h"
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 
 // Digital Differential Analyzer(DDA) line drawing algorithm
 void draw_line(float x0, float y0, float x1, float y1, app_state_t *app_state) {
@@ -55,11 +54,10 @@ bool is_top_flat_or_left(vec2_t edge) {
   return is_top_flat || is_left;
 }
 
-void draw_triangle_fill_with_lighting_effect(
-    triangle_t triangle, texture_t *texture_data,
-    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
-    texture_t *LUT_texture_data, light_t lights[], int total_lights_in_scene,
-    vec3_t camera_position, bool is_pbr, app_state_t *app_state) {
+void draw_triangle_fill_with_lighting_effect(triangle_t triangle,
+                                             material_t *material_data,
+                                             scene_info_t *scene_info,
+                                             app_state_t *app_state) {
   // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
   vec2_t v1 = vec2_from_vec4(triangle.vertices[1]);
@@ -162,6 +160,9 @@ void draw_triangle_fill_with_lighting_effect(
         u /= interpolated_z;
         v /= interpolated_z;
 
+        // get the texture_data
+        texture_t *texture_data = material_data->base_texture_data;
+
         int tex_x = abs((int)(u * texture_data->width) % texture_data->width);
         int tex_y = abs((int)(v * texture_data->height) % texture_data->height);
 
@@ -202,15 +203,19 @@ void draw_triangle_fill_with_lighting_effect(
 
         // get the lighting effect on the interpolated color value of the
         // interpolated pixel in case we have light
-        if (is_pbr) {
-          interpolated_color = light_pbr(
-              lights, total_lights_in_scene, interpolated_position,
-              camera_position, interpolated_normal, interpolated_color,
-              radiance_texture_data, irradiance_texture_data, LUT_texture_data);
+        if (material_data->is_PBR) {
+          interpolated_color =
+              light_pbr(scene_info->lights, *scene_info->total_lights_in_scene,
+                        interpolated_position, *scene_info->camera_position,
+                        interpolated_normal, interpolated_color,
+                        material_data->radiance_texture_data,
+                        material_data->irradiance_texture_data,
+                        material_data->LUT_texture_data);
         } else {
           interpolated_color = light_phong(
-              lights, total_lights_in_scene, interpolated_position,
-              camera_position, interpolated_normal, interpolated_color);
+              scene_info->lights, *scene_info->total_lights_in_scene,
+              interpolated_position, *scene_info->camera_position,
+              interpolated_normal, interpolated_color);
         }
 
         // Check and update the z_buffer
@@ -230,11 +235,8 @@ void draw_triangle_fill_with_lighting_effect(
 }
 
 void draw_triangle_fill_tiled_with_lighting_effect(
-    triangle_t triangle, texture_t *texture_data,
-    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
-    texture_t *LUT_texture_data, light_t *lights, int total_lights_in_scene,
-    vec3_t camera_position, bool is_pbr, int tile_x_min, int tile_y_min,
-    int tile_x_max, int tile_y_max, app_state_t *app_state) {
+    triangle_t triangle, material_t *material_data, scene_info_t *scene_info,
+    bounding_box_t tile_bounding_box, app_state_t *app_state) {
 
   // the three vertices of the triangle in vec2
   vec2_t v0 = vec2_from_vec4(triangle.vertices[0]);
@@ -268,17 +270,17 @@ void draw_triangle_fill_tiled_with_lighting_effect(
   float z2 = triangle.vertices[2].w;
 
   // Bounding box inside containing the three vertices of the triangle
-  int x_min = min(v0.x, min(v1.x, v2.x));
-  int y_min = min(v0.y, min(v1.y, v2.y));
-  int x_max = max(v0.x, max(v1.x, v2.x));
-  int y_max = max(v0.y, max(v1.y, v2.y));
+  int triangle_bounding_box_x_min = min(v0.x, min(v1.x, v2.x));
+  int triangle_bounding_box_y_min = min(v0.y, min(v1.y, v2.y));
+  int triangle_bounding_box_x_max = max(v0.x, max(v1.x, v2.x));
+  int triangle_bounding_box_y_max = max(v0.y, max(v1.y, v2.y));
 
   // Based on the bounding box of the triangle and the tile dimensions
   // get the new coordinates
-  int start_x = max(x_min, tile_x_min);
-  int start_y = max(y_min, tile_y_min);
-  int end_x = min(x_max, tile_x_max);
-  int end_y = min(y_max, tile_y_max);
+  int start_x = max(triangle_bounding_box_x_min, tile_bounding_box.x_min);
+  int start_y = max(triangle_bounding_box_y_min, tile_bounding_box.y_min);
+  int end_x = min(triangle_bounding_box_x_max, tile_bounding_box.x_max);
+  int end_y = min(triangle_bounding_box_y_max, tile_bounding_box.y_max);
 
   // Skip if the triangle is either to the left of the tile or on the bottom
   // start_x > end_x => triangle's bounding box is left to the tile so Skip
@@ -352,6 +354,9 @@ void draw_triangle_fill_tiled_with_lighting_effect(
         u /= interpolated_z;
         v /= interpolated_z;
 
+        // get the texture data
+        texture_t *texture_data = material_data->base_texture_data;
+
         int tex_x = abs((int)(u * texture_data->width) % texture_data->width);
         int tex_y = abs((int)(v * texture_data->height) % texture_data->height);
 
@@ -392,15 +397,19 @@ void draw_triangle_fill_tiled_with_lighting_effect(
 
         // get the lighting effect on the interpolated color value of the
         // interpolated pixel in case we have light
-        if (is_pbr) {
-          interpolated_color = light_pbr(
-              lights, total_lights_in_scene, interpolated_position,
-              camera_position, interpolated_normal, interpolated_color,
-              radiance_texture_data, irradiance_texture_data, LUT_texture_data);
+        if (material_data->is_PBR) {
+          interpolated_color =
+              light_pbr(scene_info->lights, *scene_info->total_lights_in_scene,
+                        interpolated_position, *scene_info->camera_position,
+                        interpolated_normal, interpolated_color,
+                        material_data->radiance_texture_data,
+                        material_data->irradiance_texture_data,
+                        material_data->LUT_texture_data);
         } else {
           interpolated_color = light_phong(
-              lights, total_lights_in_scene, interpolated_position,
-              camera_position, interpolated_normal, interpolated_color);
+              scene_info->lights, *scene_info->total_lights_in_scene,
+              interpolated_position, *scene_info->camera_position,
+              interpolated_normal, interpolated_color);
         }
 
         // Check and update the z_buffer

@@ -61,8 +61,9 @@ int main(void) {
     app_state.previous_frame_time = SDL_GetTicks();
 
     update(&app_state);
-    // render(&app_state);
-    render_with_threads(&app_state);
+    // render(&app_state); // run on single core
+    render_with_threads(&app_state); // run on mutiple cores based on the
+    // system availability
   }
 
   cleanup(&app_state);
@@ -73,8 +74,8 @@ int main(void) {
 /////////////////////////////////////////////////////////////////////////////////////
 
 // THREADS are declared here
-pthread_t
-    *thread_pool; // an array of thread with size == no of cores in the system
+pthread_t *thread_pool;  // an array of thread with an array size == no of cores
+                         // in the system
 thread_t *thread_data;   // data to be passed to each thread in the pool
 atomic_int tile_counter; // a global storage of all the tile ID's
 sem_t *start_signals;    // array of semaphore to signal to start the
@@ -97,24 +98,35 @@ mesh_t radiance_cubemap_mesh;
 mesh_t irradiance_cubemap_mesh;
 // LUT texture data
 texture_t LUT_texture_data;
+// Base material
+material_t base_material;
+// skybox material
+material_t skybox_material;
+
 // Lights
 light_t lights[MAX_NUMBER_OF_LIGHTS];
 light_t view_space_lights[MAX_NUMBER_OF_LIGHTS];
 int total_lights_in_scene = 0;
+
 //  TRANSFORMATION INITIALIZER
 color_t color_white = {0xFF, 0xFF, 0xFF};
 float rotation_Y = 0.0;
 float scale_Y = 1.0;
+
 // CAMERA INITIALIZER
 camera_t camera;
 // UP vector for the camera
 vec3_t camera_position_at_view_space = {0, 0, 0};
 vec3_t camera_up_vector = {0, 1, 0};
+
 // PROJECTION INITIALIZER
 const float fov_vertical = M_PI / 3.0;
 const float near = 0.1;
 const float far = 1000.0;
 const float aspect_ratio = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
+
+// Scene Info Initializer
+scene_info_t scene_info;
 //////////////////////////////////////////////////////////////////////////////////////
 
 void setup(app_state_t *app_state) {
@@ -149,6 +161,25 @@ void setup(app_state_t *app_state) {
       load_mesh_obj("../assets/skybox.obj",
                     "../assets/IBL/club_ir/club_irradiance_cubemap.png");
 
+  // Update the base material with the texture and triangle information
+  base_material.triangles_to_render = triangles_to_render;
+  base_material.triangles_to_render_count = &triangles_to_render_count;
+  base_material.base_texture_data = &mesh.texture_data;
+  base_material.radiance_texture_data = &radiance_cubemap_mesh.texture_data;
+  base_material.irradiance_texture_data = &irradiance_cubemap_mesh.texture_data;
+  base_material.LUT_texture_data = &LUT_texture_data;
+  base_material.is_PBR = true;
+
+  // Do the same for the skybox material
+  skybox_material.triangles_to_render = triangles_to_render_in_skybox;
+  skybox_material.triangles_to_render_count =
+      &triangles_to_render_in_skybox_count;
+  skybox_material.base_texture_data = &skybox.texture_data;
+  skybox_material.radiance_texture_data = NULL;
+  skybox_material.irradiance_texture_data = NULL;
+  skybox_material.LUT_texture_data = NULL;
+  skybox_material.is_PBR = false;
+
   // load the lights in the scene
   init_lights_in_scene(lights, &total_lights_in_scene);
 
@@ -160,16 +191,16 @@ void setup(app_state_t *app_state) {
   // disable the visual of mouse cursor
   SDL_SetRelativeMouseMode(SDL_TRUE);
 
+  // intialize scene information
+  scene_info.lights = lights;
+  scene_info.total_lights_in_scene = &total_lights_in_scene;
+  scene_info.camera_position = &camera_position_at_view_space;
+
   // initialize and start the threads
   is_main_thread_running = true;
-  threads_initialize(
-      app_state, &thread_pool, &thread_data, &start_signals, &done_signals,
-      &tile_counter, &is_main_thread_running, triangles_to_render,
-      triangles_to_render_in_skybox, &triangles_to_render_count,
-      &triangles_to_render_in_skybox_count, &mesh.texture_data,
-      &skybox.texture_data, &radiance_cubemap_mesh.texture_data,
-      &irradiance_cubemap_mesh.texture_data, &LUT_texture_data, lights,
-      &total_lights_in_scene, &camera_position_at_view_space);
+  threads_initialize(app_state, &thread_pool, &thread_data, &start_signals,
+                     &done_signals, &tile_counter, &is_main_thread_running,
+                     &base_material, &skybox_material, &scene_info);
 }
 
 void process_input(app_state_t *app_state) {
@@ -293,11 +324,7 @@ void render(app_state_t *app_state) {
   ////////////////////////////////////////////////////////////
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
-        triangles_to_render[i], &mesh.texture_data,
-        &radiance_cubemap_mesh.texture_data,
-        &irradiance_cubemap_mesh.texture_data, &LUT_texture_data,
-        view_space_lights, total_lights_in_scene, camera_position_at_view_space,
-        true, app_state);
+        triangles_to_render[i], &base_material, &scene_info, app_state);
     // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
 
@@ -306,10 +333,9 @@ void render(app_state_t *app_state) {
   ////////////////////////////////////////////////////////////
 
   for (int i = 0; i < triangles_to_render_in_skybox_count; ++i) {
-    draw_triangle_fill_with_lighting_effect(
-        triangles_to_render_in_skybox[i], &skybox.texture_data, NULL, NULL,
-        NULL, view_space_lights, 0, camera_position_at_view_space, false,
-        app_state);
+    draw_triangle_fill_with_lighting_effect(triangles_to_render_in_skybox[i],
+                                            &skybox_material, &scene_info,
+                                            app_state);
   }
   /////////////////////////////////////////
   //////////////////////

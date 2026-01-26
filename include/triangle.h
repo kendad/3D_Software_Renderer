@@ -47,19 +47,33 @@ typedef struct {
   uint32_t color;
 } face_t;
 
-void draw_triangle_fill_with_lighting_effect(
-    triangle_t triangle, texture_t *texture_data,
-    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
-    texture_t *LUT_texture_data, light_t lights[], int total_lights_in_scene,
-    vec3_t camera_position, bool is_pbr, app_state_t *app_state);
+typedef struct {
+  int x_min;
+  int y_min;
+  int x_max;
+  int y_max;
+} bounding_box_t;
+
+typedef struct {
+  triangle_t *triangles_to_render;
+  int *triangles_to_render_count;
+  // BRDF related textures
+  texture_t *base_texture_data;
+  texture_t *radiance_texture_data;
+  texture_t *irradiance_texture_data;
+  texture_t *LUT_texture_data;
+  bool is_PBR;
+} material_t;
+
+void draw_triangle_fill_with_lighting_effect(triangle_t triangle,
+                                             material_t *material_data,
+                                             scene_info_t *scene_info_t,
+                                             app_state_t *app_state);
 
 // To be used in multi threads
 // where the texture is divided into a 32x32 tile space
 void draw_triangle_fill_tiled_with_lighting_effect(
-    triangle_t triangle, texture_t *texture_data,
-    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
-    texture_t *LUT_texture_data, light_t *lights, int total_lights_in_scene,
-    vec3_t camera_position, bool is_pbr, int tile_x_min, int tile_y_min,
-    int tile_x_max, int tile_y_max, app_state_t *app_state);
+    triangle_t triangle, material_t *material_data, scene_info_t *scene_info,
+    bounding_box_t tile_bounding_box, app_state_t *app_state);
 
 void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);

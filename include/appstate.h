@@ -1,4 +1,6 @@
 #pragma once
+#include "lights.h"
+#include "vector.h"
 #include <SDL.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,3 +17,9 @@ typedef struct {
   float previous_frame_time;
   float delta_time;
 } app_state_t;
+
+typedef struct {
+  light_t *lights;
+  int *total_lights_in_scene;
+  vec3_t *camera_position;
+} scene_info_t;

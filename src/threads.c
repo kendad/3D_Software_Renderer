@@ -1,4 +1,5 @@
 #include "threads.h"
+#include "appstate.h"
 #include "config.h"
 #include "triangle.h"
 #include <pthread.h>
@@ -9,15 +10,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void threads_initialize(
-    app_state_t *app_state, pthread_t **thread_pool, thread_t **thread_data,
-    sem_t **start_signals, sem_t **done_signals, atomic_int *tile_counter,
-    bool *is_main_thread_running, triangle_t *triangles_to_render,
-    triangle_t *triangles_to_render_in_skybox, int *triangles_to_render_count,
-    int *triangles_to_render_in_skybox_count, texture_t *texture_data,
-    texture_t *texture_data_for_skybox, texture_t *radiance_texture_data,
-    texture_t *irradiance_texture_data, texture_t *LUT_texture_data,
-    light_t *lights, int *total_lights_in_scene, vec3_t *camera_position) {
+void threads_initialize(app_state_t *app_state, pthread_t **thread_pool,
+                        thread_t **thread_data, sem_t **start_signals,
+                        sem_t **done_signals, atomic_int *tile_counter,
+                        bool *is_main_thread_running, material_t *base_material,
+                        material_t *skybox_material, scene_info_t *scene_info) {
 
   // Get the total no of cores in the system
   int total_no_of_cores_in_the_system = sysconf(_SC_NPROCESSORS_ONLN);
@@ -36,19 +33,9 @@ void threads_initialize(
         .start_signal = &(*start_signals)[i],
         .done_signal = &(*done_signals)[i],
         .is_main_thread_running = is_main_thread_running,
-        .triangles_to_render = triangles_to_render,
-        .triangles_to_render_in_skybox = triangles_to_render_in_skybox,
-        .triangles_to_render_count = triangles_to_render_count,
-        .triangles_to_render_in_skybox_count =
-            triangles_to_render_in_skybox_count,
-        .texture_data = texture_data,
-        .texture_data_for_skybox = texture_data_for_skybox,
-        .radiance_texture_data = radiance_texture_data,
-        .irradiance_texture_data = irradiance_texture_data,
-        .LUT_texture_data = LUT_texture_data,
-        .lights = lights,
-        .total_lights_in_scene = total_lights_in_scene,
-        .camera_position = camera_position};
+        .base_material = base_material,
+        .skybox_material = skybox_material,
+        .scene_info = scene_info};
 
     (*thread_data)[i] = thread_data_for_current_index;
     pthread_create(&(*thread_pool)[i], NULL, thread_render, &(*thread_data)[i]);
@@ -105,26 +92,27 @@ void *thread_render(void *arg) {
       int tile_x_max = tile_x_min + TILE_SIZE - 1;
       int tile_y_max = tile_y_min + TILE_SIZE - 1;
 
+      bounding_box_t tile_bounding_box = {.x_min = tile_x_min,
+                                          .y_min = tile_y_min,
+                                          .x_max = tile_x_max,
+                                          .y_max = tile_y_max};
+
       // render Mesh
-      for (int i = 0; i < *thread_data->triangles_to_render_count; ++i) {
+      for (int i = 0;
+           i < *thread_data->base_material->triangles_to_render_count; ++i) {
         draw_triangle_fill_tiled_with_lighting_effect(
-            thread_data->triangles_to_render[i], thread_data->texture_data,
-            thread_data->radiance_texture_data,
-            thread_data->irradiance_texture_data, thread_data->LUT_texture_data,
-            thread_data->lights, *thread_data->total_lights_in_scene,
-            *thread_data->camera_position, true, tile_x_min, tile_y_min,
-            tile_x_max, tile_y_max, thread_data->app_state);
+            thread_data->base_material->triangles_to_render[i],
+            thread_data->base_material, thread_data->scene_info,
+            tile_bounding_box, thread_data->app_state);
       }
 
       // render Skybox
-      for (int i = 0; i < *thread_data->triangles_to_render_in_skybox_count;
-           ++i) {
+      for (int i = 0;
+           i < *thread_data->skybox_material->triangles_to_render_count; ++i) {
         draw_triangle_fill_tiled_with_lighting_effect(
-            thread_data->triangles_to_render_in_skybox[i],
-            thread_data->texture_data_for_skybox, NULL, NULL, NULL,
-            thread_data->lights, 0, *thread_data->camera_position, false,
-            tile_x_min, tile_y_min, tile_x_max, tile_y_max,
-            thread_data->app_state);
+            thread_data->skybox_material->triangles_to_render[i],
+            thread_data->skybox_material, thread_data->scene_info,
+            tile_bounding_box, thread_data->app_state);
       }
     }
 
