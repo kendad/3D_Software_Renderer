@@ -25,6 +25,7 @@ set(SOURCE_FILES
   src/texture.c
   src/clipping.c
   src/lights.c
+  src/threads.c
 )
 
 add_compile_options(
@@ -41,6 +42,7 @@ target_include_directories(renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(renderer PUBLIC
   SDL2::SDL2
   m
+  pthread
 )
 
 install(TARGETS renderer DESTINATION bin)

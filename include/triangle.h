@@ -53,4 +53,13 @@ void draw_triangle_fill_with_lighting_effect(
     texture_t *LUT_texture_data, light_t lights[], int total_lights_in_scene,
     vec3_t camera_position, bool is_pbr, app_state_t *app_state);
 
+// To be used in multi threads
+// where the texture is divided into a 32x32 tile space
+void draw_triangle_fill_tiled_with_lighting_effect(
+    triangle_t triangle, texture_t *texture_data,
+    texture_t *radiance_texture_data, texture_t *irradiance_texture_data,
+    texture_t *LUT_texture_data, light_t *lights, int total_lights_in_scene,
+    vec3_t camera_position, bool is_pbr, int tile_x_min, int tile_y_min,
+    int tile_x_max, int tile_y_max, app_state_t *app_state);
+
 void draw_triangle_wireframe(triangle_t triangle, app_state_t *app_state);

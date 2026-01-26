@@ -1,12 +1,12 @@
 #include "appstate.h"
 #include "camera.h"
-#include "clipping.h"
 #include "config.h"
 #include "display.h"
 #include "lights.h"
 #include "matrix.h"
 #include "mesh.h"
 #include "texture.h"
+#include "threads.h"
 #include "triangle.h"
 #include "utilities.h"
 #include "vector.h"
@@ -16,10 +16,15 @@
 #include <SDL_mouse.h>
 #include <SDL_stdinc.h>
 #include <SDL_timer.h>
+#include <bits/pthreadtypes.h>
 #include <math.h>
+#include <semaphore.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 //////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -28,6 +33,7 @@ void setup(app_state_t *app_state);
 void process_input(app_state_t *app_state);
 void update(app_state_t *app_state);
 void render(app_state_t *app_state);
+void render_with_threads(app_state_t *app_state);
 void cleanup(app_state_t *app_state);
 
 //////////////////////////////////////////////////////////////
@@ -55,7 +61,8 @@ int main(void) {
     app_state.previous_frame_time = SDL_GetTicks();
 
     update(&app_state);
-    render(&app_state);
+    // render(&app_state);
+    render_with_threads(&app_state);
   }
 
   cleanup(&app_state);
@@ -63,7 +70,18 @@ int main(void) {
   return 0;
 }
 /////////////////////////  INITIALIZERS
-///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+// THREADS are declared here
+pthread_t
+    *thread_pool; // an array of thread with size == no of cores in the system
+thread_t *thread_data;   // data to be passed to each thread in the pool
+atomic_int tile_counter; // a global storage of all the tile ID's
+sem_t *start_signals;    // array of semaphore to signal to start the
+                         // work[decerements a value ifnot zero]
+sem_t *done_signals; // array of semaphore to signal that a thread has done its
+                     // work[incrementsthe value]
+bool is_main_thread_running;
 
 // 3D Mesh
 mesh_t mesh;
@@ -141,6 +159,17 @@ void setup(app_state_t *app_state) {
 
   // disable the visual of mouse cursor
   SDL_SetRelativeMouseMode(SDL_TRUE);
+
+  // initialize and start the threads
+  is_main_thread_running = true;
+  threads_initialize(
+      app_state, &thread_pool, &thread_data, &start_signals, &done_signals,
+      &tile_counter, &is_main_thread_running, triangles_to_render,
+      triangles_to_render_in_skybox, &triangles_to_render_count,
+      &triangles_to_render_in_skybox_count, &mesh.texture_data,
+      &skybox.texture_data, &radiance_cubemap_mesh.texture_data,
+      &irradiance_cubemap_mesh.texture_data, &LUT_texture_data, lights,
+      &total_lights_in_scene, &camera_position_at_view_space);
 }
 
 void process_input(app_state_t *app_state) {
@@ -281,7 +310,6 @@ void render(app_state_t *app_state) {
         triangles_to_render_in_skybox[i], &skybox.texture_data, NULL, NULL,
         NULL, view_space_lights, 0, camera_position_at_view_space, false,
         app_state);
-    // draw_triangle_wireframe(triangles_in_skybox_to_render[i], app_state);
   }
   /////////////////////////////////////////
   //////////////////////
@@ -289,7 +317,27 @@ void render(app_state_t *app_state) {
   display_render_buffer(app_state);
 }
 
+void render_with_threads(app_state_t *app_state) {
+  display_clear_buffer(app_state, 0xFF000000);
+  display_clear_depth_buffer(app_state);
+  int total_no_of_cores_in_the_system = sysconf(_SC_NPROCESSORS_ONLN);
+
+  // Reset the tile counter each Frame
+  atomic_store(&tile_counter, 0);
+
+  // Wake up the threads
+  for (int i = 0; i < total_no_of_cores_in_the_system; ++i)
+    sem_post(&start_signals[i]);
+
+  // Wait for the threads to finish
+  for (int i = 0; i < total_no_of_cores_in_the_system; ++i)
+    sem_wait(&done_signals[i]);
+
+  display_render_buffer(app_state);
+}
+
 void cleanup(app_state_t *app_state) {
+  threads_cleanup(thread_pool, thread_data, start_signals, done_signals);
   free(triangles_to_render);
   free(triangles_to_render_in_skybox);
   free_mesh_data(mesh);

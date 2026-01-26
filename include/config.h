@@ -6,3 +6,5 @@
 
 #define FPS 60.0
 #define PER_FRAME_TARGET_TIME (1000.0 / FPS)
+
+#define TILE_SIZE 32
