@@ -121,7 +121,7 @@ vec3_t camera_up_vector = {0, 1, 0};
 
 // PROJECTION INITIALIZER
 const float fov_vertical = M_PI / 3.0;
-const float near = 0.1;
+const float near = 0.01;
 const float far = 1000.0;
 const float aspect_ratio = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
 
@@ -136,7 +136,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/drone.obj", "../assets/drone.png");
+  mesh = load_mesh_obj("../assets/megaphone.obj", "../assets/megaphone.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the skybox
@@ -261,9 +261,9 @@ void update(app_state_t *app_state) {
   mat4_t rotation_matrix_Y = mat4_make_rotation_y(rotation_Y);
   mat4_t rotation_matrix_Z = mat4_make_rotation_z(rotation_Y);
   mat4_t rotation_matrix = mat4_make_identity();
-  rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Z);
+  // rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Z);
   rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_Y);
-  rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_X);
+  // rotation_matrix = mat4_mul_mat4(rotation_matrix, rotation_matrix_X);
 
   mat4_t rotation_matrix_for_camera = mat4_make_identity();
 
