@@ -61,9 +61,10 @@ int main(void) {
     app_state.previous_frame_time = SDL_GetTicks();
 
     update(&app_state);
-    // render(&app_state); // run on single core
-    render_with_threads(&app_state); // run on mutiple cores based on the
-    // system availability
+    render(&app_state); // uncomment to run on single core
+    // OR
+    // render_with_threads(&app_state); // uncomment this to run on mutiple
+    // cores based on the system availability
   }
 
   cleanup(&app_state);
@@ -325,7 +326,6 @@ void render(app_state_t *app_state) {
   for (int i = 0; i < triangles_to_render_count; ++i) {
     draw_triangle_fill_with_lighting_effect(
         triangles_to_render[i], &base_material, &scene_info, app_state);
-    // draw_triangle_wireframe(triangles_to_render[i], app_state);
   }
 
   ////////////////////////////////////////////////////////////

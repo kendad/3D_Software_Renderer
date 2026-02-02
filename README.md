@@ -21,4 +21,5 @@ The only two external library used are **SDL2** for **Windowing/Inputs** and **s
 
 # PBR Lighting
 ![PBR Lighting](/assets/pbr_demo.gif)
-
+# Blinn Phong Lighting
+![Blinn Phong Lighting](assets/blinn_phong_demo.gif)
