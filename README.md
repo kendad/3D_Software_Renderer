@@ -28,13 +28,13 @@ _Based on the PBR Chapters of the book **Real Time Rendering**_
 # Build and Run the Project
 ```
 # Clone the repo
-git clone 
+git clone https://github.com/kendad/3D_Software_Renderer.git 
 cd 3D_Software_Renderer
 
 # Create the build directory
 mkdir build && cd build
 
-# Configure and build the file
+# Configure and Build the Project
 cmake ..
 cmake --build .
 
