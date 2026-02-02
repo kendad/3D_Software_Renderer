@@ -26,6 +26,8 @@ _Based on the PBR Chapters of the book **Real Time Rendering**_
 ![Blinn Phong Lighting](assets/blinn_phong_demo.gif)
 
 # Build and Run the Project
+_Install SDL2 based on you respective operating system_
+_[How to install SDL2](https://wiki.libsdl.org/SDL2/Installation)_
 ```
 # Clone the repo
 git clone https://github.com/kendad/3D_Software_Renderer.git 

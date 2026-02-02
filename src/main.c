@@ -61,9 +61,9 @@ int main(void) {
     app_state.previous_frame_time = SDL_GetTicks();
 
     update(&app_state);
-    render(&app_state); // uncomment to run on single core
+    // render(&app_state); // uncomment to run on single core
     // OR
-    // render_with_threads(&app_state); // uncomment this to run on mutiple
+    render_with_threads(&app_state); // uncomment this to run on mutiple
     // cores based on the system availability
   }
 
