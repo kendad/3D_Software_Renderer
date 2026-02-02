@@ -10,13 +10,13 @@ The only two external library used are **SDL2** for **Windowing/Inputs** and **s
 * Blinn-Phong and Physically Based Rendering Lighting supported
 * A Parallel Triangle Rasterization technique based on (https://fgiesen.wordpress.com/2013/02/10/optimizing-the-basic-rasterizer/) , that supports multithreading with pthreads that helps increases performance on a multi-core system.
 * Supports all the basic steps involved in a Graphics pipeline
-    *Model->View->Projection pipeline
-    *An FPS camera system
-    *Texture are supported
-    *Camera Frustum Clipping
-    *Persective Correct Interpolation
-    *Depth Buffer
-    *Per Pixel lighting
+    * Model->View->Projection pipeline
+    * An FPS camera system
+    * Texture are supported
+    * Camera Frustum Clipping
+    * Persective Correct Interpolation
+    * Depth Buffer
+    * Per Pixel lighting
 
 # PBR Lighting
 ![PBR Lighting](/assets/pbr_demo.gif)
