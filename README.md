@@ -16,6 +16,7 @@ The only two external library used are **SDL2** for **Windowing/Inputs** and **s
     * Camera Frustum Clipping
     * Persective Correct Interpolation
     * Depth Buffer
+    * Cubemaps/Skyboxes
     * Per Pixel lighting
 
 # PBR Lighting
