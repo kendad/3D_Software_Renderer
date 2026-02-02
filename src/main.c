@@ -136,7 +136,7 @@ void setup(app_state_t *app_state) {
 
   //////////////////////////////////////////////////////////////////
   // load_cube_mesh_data();
-  mesh = load_mesh_obj("../assets/megaphone.obj", "../assets/megaphone.png");
+  mesh = load_mesh_obj("../assets/register.obj", "../assets/register.png");
   triangles_to_render = malloc(sizeof(triangle_t) * mesh.number_of_faces);
 
   // load the skybox
