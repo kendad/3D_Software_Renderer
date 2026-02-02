@@ -1,6 +1,6 @@
 # A Software Renderer written in plain C
 
-A CPU/Software implementation of fixed GPU pipeline that supports **Physically AccurateRendering[PBR] Rendering** and also uses multithreading using **pthreads** in order to increase the renderer's performance. Its written in plain **C** with as minimal overhead as possible.
+A CPU/Software implementation of fixed GPU pipeline that supports **Physically Accurate Rendering[PBR]** and also uses multithreading with **pthreads** in order to increase the renderer's performance. Its written in plain **C** with a very minimal overhead as possible.
 The only two external library used are **SDL2** for **Windowing/Inputs** and **stb_image.h** for loading images with a well commented codebase.
 
 # Features
