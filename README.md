@@ -11,8 +11,8 @@ The only two external library used are **SDL2** for **Windowing/Inputs** and **s
 * A Parallel Triangle Rasterization technique based on (https://fgiesen.wordpress.com/2013/02/10/optimizing-the-basic-rasterizer/) , that supports multithreading with pthreads that helps increases performance on a multi-core system.
 * Supports all the basic steps involved in a Graphics pipeline
     * Model->View->Projection pipeline
-    * An FPS camera system
-    * Texture are supported
+    * FPS camera system
+    * Texture
     * Camera Frustum Clipping
     * Persective Correct Interpolation
     * Depth Buffer
@@ -20,6 +20,25 @@ The only two external library used are **SDL2** for **Windowing/Inputs** and **s
     * Per Pixel lighting
 
 # PBR Lighting
+_Based on the PBR Chapters of the book **Real Time Rendering**_
 ![PBR Lighting](/assets/pbr_demo.gif)
 # Blinn Phong Lighting
 ![Blinn Phong Lighting](assets/blinn_phong_demo.gif)
+
+# Build and Run the Project
+```
+# Clone the repo
+git clone 
+cd 3D_Software_Renderer
+
+# Create the build directory
+mkdir build && cd build
+
+# Configure and build the file
+cmake ..
+cmake --build .
+
+# this will create an executable called "renderer"
+./renderer
+
+```
