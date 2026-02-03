@@ -15,7 +15,7 @@ float clamp(float v, float min, float max) {
 // converts the 8bit rgba color channels to 32bit color variable
 uint32_t create_color_uint32(color_t color) {
   uint32_t color_uint32 = ((uint32_t)color.a << 24) |
-                          ((uint32_t)color.r << 16) | ((uint32_t)color.g << 8) |
-                          (uint32_t)color.b;
+                          ((uint32_t)color.b << 16) | ((uint32_t)color.g << 8) |
+                          (uint32_t)color.r;
   return color_uint32;
 }

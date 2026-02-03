@@ -11,14 +11,15 @@
 #define GAMMA_INVERSE (1.0 / 2.2)
 #define F0 0.04 // for most  general dieletrics F0 is 0.04
 #define ALPHA                                                                  \
-  1.0 // Surface Roughness Parameter value for shiny metal objects.....shiny
+  0.2 // Surface Roughness Parameter value for shiny metal objects.....shiny
       // stuff usually will have it near the value 0
 #define IS_METAL 0.0 // can have values 0[non metal] and 1[metal]
 
 void init_lights_in_scene(light_t *lights, int *number_of_lights) {
   if (*number_of_lights > MAX_NUMBER_OF_LIGHTS)
     return;
-  vec3_t light1_pos = {.x = 0, .y = 5.0, .z = 0};
+  // light 1
+  vec3_t light1_pos = {.x = 0.0, .y = 1.0, .z = 0};
   color_t yellow_light = {.r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF};
   light_t light1 = {.position = light1_pos,
                     .color = create_color_uint32(yellow_light)};
@@ -269,16 +270,15 @@ vec2_t uv_from_surface_normal(vec3_t surface_normal, texture_t *texture_data) {
     final_uv.y = surface_normal.z / absY;
 
     // also determine the current face
-    // this is inverted as our textures are usually inverted
-    if (surface_normal.y >= 0) {
-      // then we are facing the BOTTOM side
+    if (surface_normal.y < 0) {
+      // then we are facing the TOP side
       current_face.x = 1;
       current_face.y = 0;
       // change the signs to match the current face coordinate space
       final_uv.x *= 1.0;
       final_uv.y *= -1.0;
-    } else if (surface_normal.y < 0) {
-      // then we are facing the TOP side
+    } else if (surface_normal.y >= 0) {
+      // then we are facing the BOTTOM side
       current_face.x = 1;
       current_face.y = 2;
       // change the signs to match the current face coordinate space
